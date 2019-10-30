@@ -31,6 +31,7 @@ function LED_ALL_ON(){
     currentValue.writeSync(0); //turn ON LED
   });
 }
+
 ///////////////// INITIALIZE
 /////////////////////////////////////
 function LED_Test_Sequence(){
@@ -64,8 +65,11 @@ eStop_Button.watch((err, value) => {
 });
 
 timerInstance.addEventListener('targetAchieved', function (e){
+  LED_ALL_ON();
+  msleep(2000);
   console.log("BOOM!");
   LED_ALL_OFF();
+
 });
 
   Start_Button.watch((err, value) => {
@@ -121,12 +125,14 @@ process.on('uncaughtException', function (err) {
 });
 
 function LoadIn(){
+  //if (blinkInterval){clearInterval(blinkInterval)};
+
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
   //Safety Light = ON
   eStop_LED.writeSync(0); //ON
   Reset_Button_LED.writeSync(0); //ON
-  Standby_LED.writeSync(0); //ON  
+  Standby_LED.writeSync(0); //ON
 }
 
 function PreMatch(){
@@ -134,9 +140,8 @@ function PreMatch(){
 
   //Safety Light = OFF
   WaitForReady_LED.writeSync(0); //ON
-  MCP_Blue_Ready_LED.writeSync(0); //ON but need to add blink
-  MCP_Red_Ready_LED.writeSync(0);  //ON but need to add blink
-
+  
+  Blink_Ready(1);
 }
 
 function msleep(n) {
@@ -184,3 +189,47 @@ const system = new System();
 const SystemState = new Proxy(system, SystemState_Handler);
 
 LED_Test_Sequence();
+
+////////////////////////////////////////////
+//setTimeout(endBlink, 5000); //stop blinking after 5 seconds
+
+function blinkLED(led) { //function to start blinking
+  if (led.readSync() === 0) { //check the pin state, if the state is 0 (or off)
+    led.writeSync(1); //set pin state to 1 (turn LED on)
+
+  } else {
+    led.writeSync(0); //set pin state to 0 (turn LED off)
+  }
+}
+
+function endBlink(led) { //function to stop blinking
+  clearInterval(blinkInterval); // Stop blink intervals
+  led.writeSync(1); // Turn LED off
+  //InMatch_LED.unexport(); // Unexport GPIO to free resources
+}
+////////////////////////////////////////////
+// MCP_Blue_Ready_LED.writeSync(0);
+// MCP_Red_Ready_LED.writeSync(0);
+// setTimeout(function(){MCP_Red_Ready_LED.writeSync(1)}, 5000);
+// setTimeout(function(){MCP_Blue_Ready_LED.writeSync(1)}, 5000);
+
+function Blink_Ready(leds){
+  //leds: OFF,ALL,RED,BLUE 0,1,2,3
+  if (leds===1){
+    //turn all ON
+    MCP_Blue_Ready_LED.writeSync(0); //ON
+    MCP_Red_Ready_LED.writeSync(0); //ON
+  } else if (leds===2) {
+    //turn off Blue, let Red cont
+    MCP_Blue_Ready_LED.writeSync(1); //OFF
+    MCP_Red_Ready_LED.writeSync(0); //ON
+  } else if (leds===3) {
+    //turn off Red, let Blue cont
+    MCP_Blue_Ready_LED.writeSync(0); //ON
+    MCP_Red_Ready_LED.writeSync(1); //OFF
+  } else {
+    //turn all OFF
+    MCP_Blue_Ready_LED.writeSync(1); //OFF
+    MCP_Red_Ready_LED.writeSync(1); //OFF
+  }
+}
