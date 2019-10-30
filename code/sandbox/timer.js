@@ -2,10 +2,10 @@ const Gpio = require('onoff').Gpio;
 var { Timer } = require('easytimer.js');
 var timerInstance = new Timer();
 
-const Start_Button = new Gpio(17, 'in', 'rising', {debounceTimeout: 10});
-const Pause_Button = new Gpio(18, 'in', 'rising', {debounceTimeout: 10});
-const Reset_Button = new Gpio(27, 'in', 'rising', {debounceTimeout: 10});
-const eStop_Button = new Gpio(22, 'in', 'rising', {debounceTimeout: 10});
+const Start_Button = new Gpio(17, 'in', 'rising', {debounceTimeout: 100});
+const Pause_Button = new Gpio(18, 'in', 'rising', {debounceTimeout: 100});
+const Reset_Button = new Gpio(27, 'in', 'rising', {debounceTimeout: 100});
+const eStop_Button = new Gpio(22, 'in', 'rising', {debounceTimeout: 100});
 
 const MCP_Blue_Ready_LED = new Gpio(25, 'high'), //use declare variables for all the GPIO output pins
   MCP_Red_Ready_LED = new Gpio(5, 'high'),
@@ -23,7 +23,7 @@ var leds = [MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Start_Button_LED,Pause_Button_L
 ///////////////// INITIALIZE
 /////////////////////////////////////
 function LED_Test_Sequence(){
-  for (i=0;i<3;i++){  
+  for (i=0;i<0;i++){  
     // turn OFF all LEDs
     leds.forEach(function(currentValue) { //for each item in array
       currentValue.writeSync(1); //turn off LED
@@ -52,20 +52,25 @@ eStop_Button.watch((err, value) => {
     throw err;
   }
 
-  console.log("eStop Button = " + value);
-  
-  if (value==1){
+  //console.log("eStop Button pressed with value=" + value);
+
+  eStop_State = !eStop_State; //flip button state
+
+  if (eStop_State){
+    //Safety Light = ON
     eStop_LED.writeSync(0); //ON
     Reset_Button_LED.writeSync(0); //ON
-    Standby_LED.writeSync(0); //ON    
-    //Safety Light = ON
+    Standby_LED.writeSync(0); //ON
+    SystemState.State = SystemStates.LoadIn;
+    
   } else {
+    //Safety Light = OFF
     eStop_LED.writeSync(1); //OFF
     Reset_Button_LED.writeSync(1); //ON
     Standby_LED.writeSync(1); //ON
+    SystemState.State = SystemStates.PreMatch;    
   }
 });
-
 
 timerInstance.addEventListener('targetAchieved', function (e){
   console.log("BOOM!");
@@ -138,4 +143,38 @@ function sleep(n) {
 
 ///////////////// EXECUTION
 ///////////////////////////
+var eStop_State = false; // initial value of eStop is OFF (safe)
+
+const SystemStates = {
+  LoadIn: 1,
+  PreMatch: 2,
+  Match: 3
+}
+
+function System() {
+  this.State = SystemStates.LoadIn;
+}
+
+const SystemState_Handler = {
+  set(obj, prop, value){
+    //console.log("Prop=" + prop + " Value=" + value);
+
+    if (prop === 'State'){
+      if (value === SystemStates.PreMatch){
+        console.log("Pre-Match State");
+  
+      } else if (value === SystemStates.PreMatch){
+        console.log("Match State");
+  
+      } else {
+        // SystemStates.LoadIn
+        console.log("Load In State");
+      }
+    }    
+  }
+}
+
+const system = new System();
+const SystemState = new Proxy(system, SystemState_Handler);
+
 LED_Test_Sequence();
