@@ -20,14 +20,23 @@ const MCP_Blue_Ready_LED = new Gpio(25, 'high'), //use declare variables for all
 //Put all the LED variables in an array
 var leds = [MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Start_Button_LED,Pause_Button_LED,Reset_Button_LED,InMatch_LED,eStop_LED,Standby_LED,WaitForReady_LED];
 
+function LED_ALL_OFF(){
+  leds.forEach(function(currentValue) { //for each item in array
+    currentValue.writeSync(1); //turn off LED
+  });
+}
+
+function LED_ALL_ON(){
+  leds.forEach(function(currentValue) { //for each item in array
+    currentValue.writeSync(0); //turn ON LED
+  });
+}
 ///////////////// INITIALIZE
 /////////////////////////////////////
 function LED_Test_Sequence(){
   for (i=0;i<0;i++){  
     // turn OFF all LEDs
-    leds.forEach(function(currentValue) { //for each item in array
-      currentValue.writeSync(1); //turn off LED
-    });
+    LED_ALL_OFF();
 
     leds.forEach(function(currentValue) {
       currentValue.writeSync(0); // LED ON
@@ -35,48 +44,28 @@ function LED_Test_Sequence(){
       currentValue.writeSync(1); // LED OFF
     });
   }
-  leds.forEach(function(currentValue) {
-    currentValue.writeSync(0); // LED ON
-  });
+  LED_ALL_ON();
   msleep(2000); // WAIT 0.25 Seconds    
-  leds.forEach(function(currentValue) {
-    currentValue.writeSync(1); // LED OFF
-  });
+  LED_ALL_OFF();
 }
 
-///////////////// LOAD-IN STATE
-/////////////////////////////////////
-// is eStop pressed? 
 eStop_Button.watch((err, value) => {
   if (err) {
     throw err;
   }
 
-  //console.log("eStop Button pressed with value=" + value);
-
   eStop_State = !eStop_State; //flip button state
 
   if (eStop_State){
-    //Safety Light = ON
-    eStop_LED.writeSync(0); //ON
-    Reset_Button_LED.writeSync(0); //ON
-    Standby_LED.writeSync(0); //ON
-    SystemState.State = SystemStates.LoadIn;
-    
-  } else {
-    //Safety Light = OFF
-    eStop_LED.writeSync(1); //OFF
-    Reset_Button_LED.writeSync(1); //ON
-    Standby_LED.writeSync(1); //ON
+    SystemState.State = SystemStates.LoadIn;    
+  } else {   
     SystemState.State = SystemStates.PreMatch;    
   }
 });
 
 timerInstance.addEventListener('targetAchieved', function (e){
   console.log("BOOM!");
-  leds.forEach(function(currentValue) { //for each item in array
-    currentValue.writeSync(0); //turn off LED
-  });
+  LED_ALL_OFF();
 });
 
   Start_Button.watch((err, value) => {
@@ -121,9 +110,7 @@ function unexportOnClose(){
   Pause_Button.unexport();  
   Reset_Button.unexport();
 
-  leds.forEach(function(currentValue) { //for each item in array
-    currentValue.unexport();; //turn off LED
-  });
+  LED_ALL_OFF();
 }
 
 process.on('SIGINT', unexportOnClose);
@@ -133,6 +120,25 @@ process.on('uncaughtException', function (err) {
   unexportOnClose();
 });
 
+function LoadIn(){
+  LED_ALL_OFF(); // set LEDs to known state which is OFF
+
+  //Safety Light = ON
+  eStop_LED.writeSync(0); //ON
+  Reset_Button_LED.writeSync(0); //ON
+  Standby_LED.writeSync(0); //ON  
+}
+
+function PreMatch(){
+  LED_ALL_OFF(); // set LEDs to known state which is OFF
+
+  //Safety Light = OFF
+  WaitForReady_LED.writeSync(0); //ON
+  MCP_Blue_Ready_LED.writeSync(0); //ON but need to add blink
+  MCP_Red_Ready_LED.writeSync(0);  //ON but need to add blink
+
+}
+
 function msleep(n) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n);
 }
@@ -141,8 +147,6 @@ function sleep(n) {
   msleep(n*1000);
 }
 
-///////////////// EXECUTION
-///////////////////////////
 var eStop_State = false; // initial value of eStop is OFF (safe)
 
 const SystemStates = {
@@ -162,6 +166,7 @@ const SystemState_Handler = {
     if (prop === 'State'){
       if (value === SystemStates.PreMatch){
         console.log("Pre-Match State");
+        PreMatch();
   
       } else if (value === SystemStates.PreMatch){
         console.log("Match State");
@@ -169,6 +174,7 @@ const SystemState_Handler = {
       } else {
         // SystemStates.LoadIn
         console.log("Load In State");
+        LoadIn();
       }
     }    
   }
