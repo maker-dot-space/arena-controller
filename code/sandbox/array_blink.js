@@ -1,13 +1,15 @@
+var core = require('./init');
+
 var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
 var MCP_Blue_Ready_LED = new Gpio(25, 'high'), //use declare variables for all the GPIO output pins
   MCP_Red_Ready_LED = new Gpio(5, 'high'),
   Start_Button_LED = new Gpio(16, 'high'),
   Pause_Button_LED = new Gpio(20, 'high'),
   Reset_Button_LED = new Gpio(21, 'high'),
-  InMatch_LED = new Gpio(19, 'high'),
+  InMatch_LED = new Gpio(9, 'high'),
   eStop_LED = new Gpio(6, 'high'),
   Standby_LED = new Gpio(26, 'high'),
-  WaitForReady_LED = new Gpio(12, 'high');
+  WaitForReady_LED = new Gpio(11, 'high');
 
 //Put all the LED variables in an array
 var leds = [MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Start_Button_LED,Pause_Button_LED,Reset_Button_LED,InMatch_LED,eStop_LED,Standby_LED,WaitForReady_LED];
