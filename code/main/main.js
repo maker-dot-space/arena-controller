@@ -9,9 +9,9 @@ let mainWindow
 function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    //kiosk: true,
-    width: 1500,
-    height: 900,
+    kiosk: true,
+    //width: 1500,
+    //height: 900,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
@@ -67,10 +67,14 @@ app.on('activate', function () {
 /// --- Main App
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const startSeconds = 180; // 3 minutes
+//--- Set constants and variables.
+var startSeconds = 180; // 3 minutes
 var secondsLeft = 180;
+var arenaApp = {
+  timerPause: false
+};
 
-var appStates = {
+const appStates = {
   LOADIN: 1,
   PREMATCH: 2,
   MATCH: 3,
@@ -81,28 +85,74 @@ var appStates = {
   }
 }
   
-
+//--- Initialize the arena
 function initializeArena(){
 
   // Set the current state
-  mainWindow.webContents.executeJavaScript(`updateAppState('` + appStates.properties[1].name + `')`);
-  //mainWindow.webContents.executeJavaScript(`updateAppState('Load In')`);
-  //mainWindow.webContents.executeJavaScript(`alert('Howdy')`);
-
+  setUiState(appStates.properties[1].name);
+ 
   // Set the initial time left
-  mainWindow.webContents.executeJavaScript(`updateTimer(` + startSeconds + `)`);
+  mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
 
-  // Temp initialization of the timer
-  startTimer();
+  // TEMP testing starting the timer
+  setTimeout(startTimer, 2000);
+
 }
 
+// -- Set State in UI
+function setUiState(stateText){
+  mainWindow.webContents.executeJavaScript(`updateAppState('` + stateText + `')`);
+}
 
+//--- Start timer
 function startTimer(){
-  
-  setInterval(function(){
-    mainWindow.webContents.executeJavaScript(`updateTimer(` + secondsLeft + `)`);
-    secondsLeft--;
+  arenaApp.timer = setInterval(function(){
+    
+    if(arenaApp.timerPause === false)
+      updateTimer();
+    
+    if(secondsLeft == 0)
+      pauseTimer();
+
   }, 1000);
+}
+
+//--- Pause timer
+function pauseTimer(){
+  arenaApp.timerPause = true;  
+}
+
+//--- Update timer
+function updateTimer(){
+  // Count down 1 second
+  secondsLeft--;
+
+  // Update the UI
+  mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
+  
+}
+
+//--- Return the timer text for the seconds remaining
+function getTimerText(){
+  
+  // Determine minutes and seconds left to be displayed
+  var s = (secondsLeft % startSeconds);
+  var m = 0;
+  if(s > 0){
+    m = Math.floor(s / 60);
+  } else {
+    m = Math.floor(startSeconds / 60);
+  }
+  
+  s = s % 60;
+
+  // Convert to string.
+  var mText = m.toString();
+  var sText = s.toString();
+  if (s < 10) {
+    sText = "0" + sText;
+  } 
+  return mText + ':' + sText;
 }
 
 
