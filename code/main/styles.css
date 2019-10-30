@@ -1,0 +1,19 @@
+@font-face{
+    font-family:'digital';
+    src: url('./assets/font.ttf');
+}
+
+body {
+    background-color: #000;
+    color: #fff;
+    padding: 0;
+    margin: 0;
+}
+
+#timer {
+    font-family: digital;
+    font-size: 160px;
+    font-weight: bold;
+    text-align: center;
+    padding: 50px;
+}
