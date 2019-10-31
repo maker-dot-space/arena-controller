@@ -70,10 +70,12 @@ app.on('activate', function () {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //--- Set constants and variables.
+var player = require('play-sound')(opts = {})
 var startSeconds = 180; // 3 minutes
 var secondsLeft = startSeconds;
 var arenaApp = {
-  timerPause: true
+  timerPause: true,
+  playCountdown: false
 };
 
 const appStates = {
@@ -109,12 +111,10 @@ function initializeArena(){
 //--- Initialize the timer intervals
 function initializeTimer(){
   arenaApp.timer = setInterval(function(){
-    if(arenaApp.timerPause === false){
+    if(arenaApp.timerPause === false && arenaApp.playCountdown === false){
       // Count down 1 second
       secondsLeft--;
       updateTimer();
-
-      console.log(app.myVar);
     }      
     
     if(secondsLeft == 0)
@@ -187,6 +187,15 @@ app.adjustTimer = function(direction){ // Expects a positive or negative integer
   updateTimer();
 }
 
+function playCountdownToFight(){
+  arenaApp.playCountdown = true;
+  player.play('./assets/321-FIGHT.mp3');
+
+  setTimeout(function(){
+    arenaApp.playCountdown = false;
+  }, 4000);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- Methods for updating the UI
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -194,6 +203,7 @@ app.adjustTimer = function(direction){ // Expects a positive or negative integer
 
 //--- Start timer
 app.startTimer = function(){
+  playCountdownToFight();
   setAppStateUI(appStates.MATCH);
   arenaApp.timerPause = false;
 }
@@ -217,4 +227,20 @@ app.setUiText = function(text){
   mainWindow.webContents.executeJavaScript(`updateAppState('` + text + `')`);
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// --- Methods for playing sounds
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+function playBlueReady(){
+  player.play('./assets/blue.mp3');  
+}
+
+function playRedReady(){
+  player.play('./assets/red.mp3');  
+}
+
+function playTapout(){
+  player.play('./assets/tapout-game.mp3');  
+}
