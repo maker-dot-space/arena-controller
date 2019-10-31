@@ -68,8 +68,8 @@ app.on('activate', function () {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //--- Set constants and variables.
-var startSeconds = 180; // 3 minutes
-var secondsLeft = 180;
+var startSeconds = 30; // 3 minutes
+var secondsLeft = 30;
 var arenaApp = {
   timerPause: false
 };
@@ -79,9 +79,9 @@ const appStates = {
   PREMATCH: 2,
   MATCH: 3,
   properties: {
-    1: {name: 'Load In'},
-    2: {name: 'Pre Match'},
-    3: {name: 'Match'}
+    1: {name: 'LOADING IN'},
+    2: {name: 'PRE MATCH'},
+    3: {name: 'MATCH IN PROGRESS'}
   }
 }
   
@@ -122,6 +122,12 @@ function pauseTimer(){
   arenaApp.timerPause = true;  
 }
 
+//--- Reset clock
+function resetClock(){
+  arenaApp.timerPause = true;
+  secondsLeft = startSeconds;
+}
+
 //--- Update timer
 function updateTimer(){
   // Count down 1 second
@@ -138,7 +144,7 @@ function getTimerText(){
   // Determine minutes and seconds left to be displayed
   var s = (secondsLeft % startSeconds);
   var m = 0;
-  if(s > 0){
+  if(s > 0 && arenaApp.timerPause === false){
     m = Math.floor(s / 60);
   } else {
     m = Math.floor(startSeconds / 60);
