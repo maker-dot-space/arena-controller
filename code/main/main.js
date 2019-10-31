@@ -61,8 +61,6 @@ app.on('activate', function () {
 })
 
 
-app.myVar = "Hello Jeff";
-
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
@@ -100,15 +98,10 @@ function initializeArena(){
 
   // Initialize the timer
   initializeTimer();
-  
+
   // TEMP testing starting the timer
   setTimeout(startTimer, 2000);
 
-}
-
-// -- Set State in UI
-function setUiState(stateText){
-  mainWindow.webContents.executeJavaScript(`updateAppState('` + stateText + `')`);
 }
 
 function initializeTimer(){
@@ -125,22 +118,6 @@ function initializeTimer(){
       pauseTimer();
 
   }, 1000);
-}
-
-//--- Start timer
-function startTimer(){
-  arenaApp.timerPause = false;
-}
-
-//--- Pause timer
-function pauseTimer(){
-  arenaApp.timerPause = true;  
-}
-
-//--- Reset clock
-function resetClock(){
-  arenaApp.timerPause = true;
-  secondsLeft = startSeconds;
 }
 
 //--- Update timer
@@ -173,6 +150,33 @@ function getTimerText(){
   } 
   return mText + ':' + sText;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// --- Methods for updating the UI
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// -- Set State in UI
+function setUiState(stateText){
+  mainWindow.webContents.executeJavaScript(`updateAppState('` + appStates.properties[appStates.LOADIN].name + `')`);
+}
+
+//--- Start timer
+function startTimer(){
+  arenaApp.timerPause = false;
+}
+
+//--- Pause timer
+function pauseTimer(){
+  arenaApp.timerPause = true;  
+}
+
+//--- Reset clock
+function resetClock(){
+  arenaApp.timerPause = true;
+  secondsLeft = startSeconds;
+}
+
 
 
 
