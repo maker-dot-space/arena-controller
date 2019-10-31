@@ -135,36 +135,24 @@ function updateTimer(){
 //--- Return the timer text for the seconds remaining
 function getTimerText(){
   
-  // Determine minutes and seconds left to be displayed
-  var s = (secondsLeft % startSeconds);
-  var m = 0;
-  if(s > 0 || arenaApp.timerPause === false){
-    m = Math.floor(s / 60);
-  } else {
-    m = Math.floor(startSeconds / 60);
-  }
-  
-  s = s % 60;
+  // Create new date object
+  var date = new Date(null);
 
-  // Convert to string.
-  var mText = m.toString();
-  var sText = s.toString();
-  if (s < 10) {
-    sText = "0" + sText;
-  } 
-  return mText + ':' + sText;
+  // Set the seconds
+  date.setSeconds(secondsLeft);
+
+  // Convert to string and return just the minutes and seconds
+  if(date.getMinutes() < 10)
+    return timeString = date.toISOString().substr(15,4);
+  
+  return timeString = date.toISOString().substr(14,5);
 }
 
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// --- Methods for updating the UI
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// -- Set the state of the app in the UI
+//--- Set the state of the app in the UI
 function setAppStateUI(state){ // expects an appState
   
   if(mainWindow !== null){
-    mainWindow.webContents.executeJavaScript(`updateAppState('` + appStates.properties[state].name + `')`);
+    app.setUiText(appStates.properties[state].name);
   
     switch(state) {
       case appStates.LOADIN:
@@ -180,28 +168,49 @@ function setAppStateUI(state){ // expects an appState
   }    
 }
 
+//--- Increase/Decrease the timer
+app.adjustTimer = function(direction){ // Expects a positive or negative integer
+
+  // Update the seconds
+  secondsLeft = secondsLeft + direction;
+
+  // Update the start seconds if applicable
+  if((direction === 1 && startSeconds < secondsLeft)
+      || (direction === -1 && startSeconds > secondsLeft))
+      startSeconds = secondsLeft;
+  
+  // Update the UI
+  updateTimer();
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// --- Methods for updating the UI
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //--- Start timer
-app.startTimer = function startTimer(){
+app.startTimer = function(){
   setAppStateUI(appStates.MATCH);
   arenaApp.timerPause = false;
 }
 
 //--- Pause timer
-app.pauseTimer = function pauseTimer(){
+app.pauseTimer = function(){
   setAppStateUI(appStates.MATCHPAUSED);
   arenaApp.timerPause = true;  
 }
 
 //--- Reset clock
-app.resetTimer = function resetClock(){
+app.resetTimer = function(){
   arenaApp.timerPause = true;
   secondsLeft = startSeconds;
   updateTimer();
   setAppStateUI(appStates.LOADIN);
 }
 
-
+// --- Sets the text displayed in the UI
+app.setUiText = function(text){
+  mainWindow.webContents.executeJavaScript(`updateAppState('` + text + `')`);
+}
 
 

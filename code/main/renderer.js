@@ -7,7 +7,9 @@
 
 const remote = require('electron').remote;
 
-var renderer = {};
+var renderer = {
+    timerSkip: false
+};
 
 $(document).ready(function () {
 
@@ -36,13 +38,50 @@ function enableTimerControls(){
 
     // Button events
     $("#timerUp").on("click", function(){
-        
+        if(renderer.timerSkip === false)
+            remote.app.adjustTimer(1);
     });
 
     $("#timerDown").on("click", function(){
-        
+        if(renderer.timerSkip === false)
+            remote.app.adjustTimer(-1);
+    });
+
+    // Rapid timer adjustments
+    $("#timerUp").on("mousedown", function(){
+        timerSkip(5);       
+    });
+
+    $("#timerDown").on("mousedown", function(){
+        timerSkip(-5);       
+    });
+
+    $("#timerUp").on("mouseup", function(){
+        stopTimerSkip();       
+    });
+
+    $("#timerDown").on("mouseup", function(){
+        stopTimerSkip();
     });
 }
+
+function timerSkip(skipVal){
+    renderer.mouseTimeout = setTimeout(function(){
+        renderer.timerSkip = true;
+        renderer.timerSkipInterval = setInterval(function(){
+            if(renderer.timerSkip)
+                remote.app.adjustTimer(skipVal);
+        }, 500)            
+    }, 500);
+}
+
+function stopTimerSkip(){
+    clearInterval(renderer.timerSkipInterval);
+    clearTimeout(renderer.mouseTimeout);
+    renderer.timerSkip = false;
+}
+
+
 
 function disableTimerControls(){
     
@@ -54,7 +93,11 @@ function disableTimerControls(){
 
     // Disable button events
     $("#timerUp").off("click");
+    $("#timerUp").off("mousedown");
+    $("#timerUp").off("mouseup");
     $("#timerDown").off("click");
+    $("#timerDown").off("mousedown");
+    $("#timerDown").off("mouseup");
 }
 
 
