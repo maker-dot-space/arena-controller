@@ -13,9 +13,7 @@ $(document).ready(function () {
 
     renderer.timerObj = $("#timer");
     renderer.stateObj = $("#state");
-
-    enableTimerControls();
-
+    enableStateControls();
 });
 
 
@@ -25,6 +23,8 @@ $(document).ready(function () {
 
 // --- Events -------------------------------
 function enableTimerControls(){
+    
+    // Display/Hide
     var ctrls = $("#timerControls");
     ctrls.on("mouseenter", function(){
         ctrls.animate({opacity: 1}, 300)
@@ -33,10 +33,55 @@ function enableTimerControls(){
     ctrls.on("mouseleave", function(){
         ctrls.animate({opacity: 0}, 500)
     });
+
+    // Button events
+    $("#timerUp").on("click", function(){
+        
+    });
+
+    $("#timerDown").on("click", function(){
+        
+    });
 }
 
 function disableTimerControls(){
     
+    // Display/Hide
+    var ctrls = $("#timerControls");
+    ctrls.animate({opacity: 0}, 500)
+    ctrls.off("mouseenter");
+    ctrls.off("mouseleave");
+
+    // Disable button events
+    $("#timerUp").off("click");
+    $("#timerDown").off("click");
+}
+
+
+function enableStateControls(){
+    
+    // Display/Hide
+    var ctrls = $("#stateControls");
+    ctrls.on("mouseenter", function(){
+        ctrls.animate({opacity: 1}, 300)
+    });
+
+    ctrls.on("mouseleave", function(){
+        ctrls.animate({opacity: 0}, 500)
+    });
+
+    // Button events
+    $("#stateStart").on("click", function(){
+        remote.app.startTimer();       
+    });
+
+    $("#statePause").on("click", function(){
+        remote.app.pauseTimer();
+    });
+
+    $("#stateReset").on("click", function(){
+        remote.app.resetTimer();
+    });
 }
 
 // --- UI updates ---------------------------------

@@ -80,10 +80,12 @@ const appStates = {
   LOADIN: 1,
   PREMATCH: 2,
   MATCH: 3,
+  MATCHPAUSED: 4,
   properties: {
     1: {name: 'LOADING IN'},
     2: {name: 'PRE MATCH'},
-    3: {name: 'MATCH IN PROGRESS'}
+    3: {name: 'MATCH IN PROGRESS'},
+    4: {name: 'MATCH PAUSED'}
   }
 }
   
@@ -91,19 +93,20 @@ const appStates = {
 function initializeArena(){
 
   // Set the current state
-  setUiState(appStates.properties[1].name);
+  setAppStateUI(appStates.LOADIN);
  
   // Set the initial time left
-  mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
+  updateTimer();
 
   // Initialize the timer
   initializeTimer();
 
   // TEMP testing starting the timer
-  setTimeout(startTimer, 2000);
+  //setTimeout(startTimer, 2000);
 
 }
 
+//--- Initialize the timer intervals
 function initializeTimer(){
   arenaApp.timer = setInterval(function(){
     if(arenaApp.timerPause === false){
@@ -124,7 +127,8 @@ function initializeTimer(){
 function updateTimer(){
 
   // Update the UI
-  mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
+  if(mainWindow !== null)
+    mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
   
 }
 
@@ -156,25 +160,46 @@ function getTimerText(){
 // --- Methods for updating the UI
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// -- Set State in UI
-function setUiState(stateText){
-  mainWindow.webContents.executeJavaScript(`updateAppState('` + appStates.properties[appStates.LOADIN].name + `')`);
+// -- Set the state of the app in the UI
+function setAppStateUI(state){ // expects an appState
+  
+  if(mainWindow !== null){
+    mainWindow.webContents.executeJavaScript(`updateAppState('` + appStates.properties[state].name + `')`);
+  
+    switch(state) {
+      case appStates.LOADIN:
+        mainWindow.webContents.executeJavaScript(`enableTimerControls()`);
+        break;
+      case appStates.PREMATCH:
+        mainWindow.webContents.executeJavaScript(`enableTimerControls()`);
+        break;
+      case appStates.MATCH:
+        mainWindow.webContents.executeJavaScript(`disableTimerControls()`);
+        break;
+    }
+  }    
 }
 
+
+
 //--- Start timer
-function startTimer(){
+app.startTimer = function startTimer(){
+  setAppStateUI(appStates.MATCH);
   arenaApp.timerPause = false;
 }
 
 //--- Pause timer
-function pauseTimer(){
+app.pauseTimer = function pauseTimer(){
+  setAppStateUI(appStates.MATCHPAUSED);
   arenaApp.timerPause = true;  
 }
 
 //--- Reset clock
-function resetClock(){
+app.resetTimer = function resetClock(){
   arenaApp.timerPause = true;
   secondsLeft = startSeconds;
+  updateTimer();
+  setAppStateUI(appStates.LOADIN);
 }
 
 
