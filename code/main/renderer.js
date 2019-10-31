@@ -65,6 +65,7 @@ function enableTimerControls(){
     });
 }
 
+// Skips the timer the specified seconds
 function timerSkip(skipVal){
     renderer.mouseTimeout = setTimeout(function(){
         renderer.timerSkip = true;
@@ -75,6 +76,7 @@ function timerSkip(skipVal){
     }, 500);
 }
 
+// Stops the timer skipping
 function stopTimerSkip(){
     clearInterval(renderer.timerSkipInterval);
     clearTimeout(renderer.mouseTimeout);
@@ -128,9 +130,17 @@ function enableStateControls(){
 }
 
 // --- UI updates ---------------------------------
-function updateTimer(secs){
+function updateTimer(timeText){
     if(renderer.timerObj !== undefined)
-        renderer.timerObj.html(secs);
+        renderer.timerObj.html(timeText);
+}
+
+function setTimerColorWhite(){
+    renderer.timerObj.addClass("white");
+}
+
+function setTimerColorDefault(){
+    renderer.timerObj.removeClass("white");
 }
 
 function updateAppState(state){

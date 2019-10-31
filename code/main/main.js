@@ -127,8 +127,11 @@ function initializeTimer(){
 function updateTimer(){
 
   // Update the UI
-  if(mainWindow !== null)
+  if(mainWindow !== null) {
     mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
+    if(secondsLeft === 30)
+      mainWindow.webContents.executeJavaScript(`setTimerColorWhite()`);
+  }    
   
 }
 
@@ -157,6 +160,7 @@ function setAppStateUI(state){ // expects an appState
     switch(state) {
       case appStates.LOADIN:
         mainWindow.webContents.executeJavaScript(`enableTimerControls()`);
+        mainWindow.webContents.executeJavaScript(`setTimerColorDefault()`);
         break;
       case appStates.PREMATCH:
         mainWindow.webContents.executeJavaScript(`enableTimerControls()`);
