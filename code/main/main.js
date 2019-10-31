@@ -71,7 +71,7 @@ app.on('activate', function () {
 
 //--- Set constants and variables.
 var player = require('play-sound')(opts = {})
-var startSeconds = 10; // 3 minutes
+var startSeconds = 180; // 3 minutes
 var secondsLeft = startSeconds;
 var arenaApp = {
   timerPause: true,
