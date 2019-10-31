@@ -71,7 +71,7 @@ app.on('activate', function () {
 
 //--- Set constants and variables.
 var player = require('play-sound')(opts = {})
-var startSeconds = 180; // 3 minutes
+var startSeconds = 10; // 3 minutes
 var secondsLeft = startSeconds;
 var arenaApp = {
   timerPause: true,
@@ -83,11 +83,13 @@ const appStates = {
   PREMATCH: 2,
   MATCH: 3,
   MATCHPAUSED: 4,
+  MATCHFINISHED: 5,
   properties: {
     1: {name: 'LOADING IN'},
     2: {name: 'PRE MATCH'},
     3: {name: 'MATCH IN PROGRESS'},
-    4: {name: 'MATCH PAUSED'}
+    4: {name: 'MATCH PAUSED'},
+    5: {name: 'MATCH FINISHED'}
   }
 }
   
@@ -117,8 +119,12 @@ function initializeTimer(){
       updateTimer();
     }      
     
-    if(secondsLeft == 0)
-      pauseTimer();
+    // Only do this once
+    if(secondsLeft == 0 && arenaApp.timerPause === false){
+      player.play('./assets/air-horn.mp3');
+      setAppStateUI(appStates.MATCHFINISHED);
+      arenaApp.timerPause = true;
+    }
 
   }, 1000);
 }
