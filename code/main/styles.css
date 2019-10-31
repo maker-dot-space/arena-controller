@@ -5,28 +5,73 @@
 
 body {
     background-color: #000;
-    background-image: url(./assets/RR_Arena_Background_1920_1080_Large.png);
+    background-image: url(./assets/RR_Arena_Background_1920_1080.png);
     color: #fff;
     padding: 0;
     margin: 0;
 }
 
-#timerContainer {
-    margin-top: 100px;
-}
-
-#timer {
-    font-family: digital;
-    font-size: 200px;
-    font-weight: bold;
-    text-align: center;
-    padding: 50px;
-    color: #36E2FE;
-}
-
 #state {
+    
+    margin-top: 330px;
     font-size: 60px;
+    line-height: 10px;
     font-family: Arial, Helvetica, sans-serif;
     font-weight: bold;
     text-align: center;
 }
+
+#timer {
+    font-family: digital;
+    line-height: 450px;
+    font-size: 700px;
+    font-weight: bold;
+    text-align: center;
+    padding: 50px;
+    color: #d91a22;
+}
+
+#timerControls {
+    opacity: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+    position: absolute;
+    bottom: 50px;
+    right: 50px;
+    
+}
+
+#timerControls a {
+    display: block;
+    margin-top: 20px;
+}
+
+
+
+.btn-red{
+    border:1px solid #df0909; -webkit-border-radius: 3px; -moz-border-radius: 3px;border-radius: 3px;font-size:14px;font-family:arial, helvetica, sans-serif; 
+    padding: 20px 30px; text-decoration:none; display:inline-block;text-shadow: -1px -1px 0 rgba(0,0,0,0.3);font-weight:bold; color: #FFFFFF;
+    min-width: 80px;
+    text-align: center;
+    background-color: #f62b2b; background-image: -webkit-gradient(linear, left top, left bottom, from(#f62b2b), to(#d20202));
+    background-image: -webkit-linear-gradient(top, #f62b2b, #d20202);
+    background-image: -moz-linear-gradient(top, #f62b2b, #d20202);
+    background-image: -ms-linear-gradient(top, #f62b2b, #d20202);
+    background-image: -o-linear-gradient(top, #f62b2b, #d20202);
+    background-image: linear-gradient(to bottom, #f62b2b, #d20202);filter:progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr=#f62b2b, endColorstr=#d20202);
+}
+
+
+.btn-red:active{
+    border:1px solid #b30808;
+    background-color: #e40a0a; background-image: -webkit-gradient(linear, left top, left bottom, from(#e40a0a), to(#9f0202));
+    background-image: -webkit-linear-gradient(top, #e40a0a, #9f0202);
+    background-image: -moz-linear-gradient(top, #e40a0a, #9f0202);
+    background-image: -ms-linear-gradient(top, #e40a0a, #9f0202);
+    background-image: -o-linear-gradient(top, #e40a0a, #9f0202);
+    background-image: linear-gradient(to bottom, #e40a0a, #9f0202);filter:progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr=#e40a0a, endColorstr=#9f0202);
+}
+

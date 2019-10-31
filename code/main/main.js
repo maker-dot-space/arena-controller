@@ -13,7 +13,8 @@ function createWindow () {
     //width: 1500,
     //height: 900,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: true
     }
   })
 
@@ -59,6 +60,9 @@ app.on('activate', function () {
   if (mainWindow === null) createWindow()
 })
 
+
+app.myVar = "Hello Jeff";
+
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
@@ -68,10 +72,10 @@ app.on('activate', function () {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //--- Set constants and variables.
-var startSeconds = 30; // 3 minutes
-var secondsLeft = 30;
+var startSeconds = 180; // 3 minutes
+var secondsLeft = startSeconds;
 var arenaApp = {
-  timerPause: false
+  timerPause: true
 };
 
 const appStates = {
@@ -94,6 +98,9 @@ function initializeArena(){
   // Set the initial time left
   mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
 
+  // Initialize the timer
+  initializeTimer();
+  
   // TEMP testing starting the timer
   setTimeout(startTimer, 2000);
 
@@ -104,17 +111,25 @@ function setUiState(stateText){
   mainWindow.webContents.executeJavaScript(`updateAppState('` + stateText + `')`);
 }
 
-//--- Start timer
-function startTimer(){
+function initializeTimer(){
   arenaApp.timer = setInterval(function(){
-    
-    if(arenaApp.timerPause === false)
+    if(arenaApp.timerPause === false){
+      // Count down 1 second
+      secondsLeft--;
       updateTimer();
+
+      console.log(app.myVar);
+    }      
     
     if(secondsLeft == 0)
       pauseTimer();
 
   }, 1000);
+}
+
+//--- Start timer
+function startTimer(){
+  arenaApp.timerPause = false;
 }
 
 //--- Pause timer
@@ -130,8 +145,6 @@ function resetClock(){
 
 //--- Update timer
 function updateTimer(){
-  // Count down 1 second
-  secondsLeft--;
 
   // Update the UI
   mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
@@ -144,7 +157,7 @@ function getTimerText(){
   // Determine minutes and seconds left to be displayed
   var s = (secondsLeft % startSeconds);
   var m = 0;
-  if(s > 0 && arenaApp.timerPause === false){
+  if(s > 0 || arenaApp.timerPause === false){
     m = Math.floor(s / 60);
   } else {
     m = Math.floor(startSeconds / 60);

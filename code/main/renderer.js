@@ -5,14 +5,54 @@
 // selectively enable features needed in the rendering
 // process.
 
-var timerObj = document.getElementById("timer");
-var stateObj = document.getElementById("state");
+const remote = require('electron').remote;
 
+var renderer = {};
+
+$(document).ready(function () {
+
+    renderer.timerObj = $("#timer");
+    renderer.stateObj = $("#state");
+
+    enableTimerControls();
+
+});
+
+
+
+
+// --- Methods available to the main process
+
+// --- Events -------------------------------
+function enableTimerControls(){
+    var ctrls = $("#timerControls");
+    ctrls.on("mouseenter", function(){
+        ctrls.animate({opacity: 1}, 300)
+    });
+
+    ctrls.on("mouseleave", function(){
+        ctrls.animate({opacity: 0}, 500)
+    });
+}
+
+function disableTimerControls(){
+    
+}
+
+// --- UI updates ---------------------------------
 function updateTimer(secs){
-    timerObj.innerHTML = secs;
+    if(renderer.timerObj !== undefined)
+        renderer.timerObj.html(secs);
 }
 
 function updateAppState(state){
-    stateObj.innerHTML = state;
+    if(renderer.stateObj !== undefined)
+        renderer.stateObj.html(state);
 }
+
+
+
+
+
+
 

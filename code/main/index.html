@@ -7,14 +7,25 @@
   </head>
   <body>
     
-        
-    
-    <div id="timerContainer">
-      <div id="timer"></div>
-    </div>
     <div id="state"></div>
+    <div id="timer"></div>
+
+
+    <div id="timerControls">
+      TIMER
+      <a href="javascript: void(0);" id="timerUp" class="btn-red">Up</a>
+      <a href="javascript: void(0);" id="timerDown" class="btn-red">Down</a>
+
+    </div>
+
+
 
     <!-- You can also require other files to run in this process -->
+    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
+    <script src="./jquery-1.12.4.js"></script>
     <script src="./renderer.js"></script>
+
+    <script>if (window.module) module = window.module;</script>
   </body>
 </html>
