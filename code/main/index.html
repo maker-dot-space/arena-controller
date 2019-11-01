@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Robot Ruckus</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div id="wrapper">
+      <div id="state"></div>
+      <div id="timer"></div>
+
+      <div id="stateControls">
+        <a href="javascript: void(0);" id="stateStart" class="btn-state btn-green">Start</a>
+        <a href="javascript: void(0);" id="statePause" class="btn-state btn-yellow">Pause</a>
+        <a href="javascript: void(0);" id="stateReset" class="btn-state btn-white">Reset</a>
+      </div>
+
+      <div id="timerControls">
+        TIMER
+        <a href="javascript: void(0);" id="timerUp" class="btn-red">Up</a>
+        <a href="javascript: void(0);" id="timerDown" class="btn-red">Down</a>
+
+      </div>
+    </div>
+    
+
+
+
+    <!-- You can also require other files to run in this process -->
+    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
+    <script src="./jquery-1.12.4.js"></script>
+    <script src="./renderer.js"></script>
+
+    <script>if (window.module) module = window.module;</script>
+  </body>
+</html>

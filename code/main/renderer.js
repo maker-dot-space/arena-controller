@@ -1,0 +1,187 @@
+// This file is required by the index.html file and will
+// be executed in the renderer process for that window.
+// No Node.js APIs are available in this process because
+// `nodeIntegration` is turned off. Use `preload.js` to
+// selectively enable features needed in the rendering
+// process.
+
+const remote = require('electron').remote;
+
+var renderer = {
+    timerSkip: false
+};
+
+$(document).ready(function () {
+
+    renderer.timerObj = $("#timer");
+    renderer.stateObj = $("#state");
+    enableStateControls();
+
+    // Auto hide mouse when not using
+    var idleMouseTimer;
+    var forceMouseHide = false;
+    $("body").css('cursor', 'none');
+    $("#wrapper").mousemove(function(ev) {
+            if(!forceMouseHide) {
+                    $("body").css('cursor', '');
+
+                    clearTimeout(idleMouseTimer);
+
+                    idleMouseTimer = setTimeout(function() {
+                            $("body").css('cursor', 'none');
+
+                            forceMouseHide = true;
+                            setTimeout(function() {
+                                    forceMouseHide = false;
+                            }, 200);
+                    }, 1000);
+            }
+    });
+
+});
+
+// Enable start/pause/reset controls
+// Set up mouse events
+function enableStateControls(){
+    
+    // Display/Hide
+    var ctrls = $("#stateControls");
+    ctrls.on("mouseenter", function(){
+        ctrls.animate({opacity: 1}, 300)
+    });
+
+    ctrls.on("mouseleave", function(){
+        ctrls.animate({opacity: 0}, 500)
+    });
+
+    // Button events
+    $("#stateStart").on("click", function(){
+        remote.app.startTimer();       
+    });
+
+    $("#statePause").on("click", function(){
+        remote.app.pauseTimer();
+    });
+
+    $("#stateReset").on("click", function(){
+        remote.app.resetTimer();
+    });
+}
+
+
+
+// --- Methods available to the main process -----------------------------------------------------
+
+// --- Events -------------------------------
+function enableTimerControls(){
+    
+    // Display/Hide
+    var ctrls = $("#timerControls");
+    ctrls.on("mouseenter", function(){
+        ctrls.animate({opacity: 1}, 300)
+    });
+
+    ctrls.on("mouseleave", function(){
+        
+        // Make sure that the timer skip is disabled
+        stopTimerSkip();
+
+        // Hide controls
+        ctrls.animate({opacity: 0}, 500)
+    });
+
+    // Button events
+    $("#timerUp").on("click", function(){
+        if(renderer.timerSkip === false)
+            remote.app.adjustTimer(1);
+    });
+
+    $("#timerDown").on("click", function(){
+        if(renderer.timerSkip === false)
+            remote.app.adjustTimer(-1);
+    });
+
+    // Rapid timer adjustments
+    $("#timerUp").on("mousedown", function(){
+        timerSkip(5);       
+    });
+    $("#timerDown").on("mousedown", function(){
+        timerSkip(-5);       
+    });
+    $("#timerUp").on("mouseup", function(){
+        stopTimerSkip();       
+    });
+    $("#timerDown").on("mouseup", function(){
+        stopTimerSkip();
+    });
+}
+
+// Skips the timer the specified seconds
+function timerSkip(skipVal){
+    renderer.mouseTimeout = setTimeout(function(){
+        renderer.timerSkip = true;
+        renderer.timerSkipInterval = setInterval(function(){
+            if(renderer.timerSkip)
+                remote.app.adjustTimer(skipVal);
+        }, 500)            
+    }, 500);
+}
+
+// Stops the timer skipping
+function stopTimerSkip(){
+    clearInterval(renderer.timerSkipInterval);
+    clearTimeout(renderer.mouseTimeout);
+    renderer.timerSkip = false;
+}
+
+
+// Disable the timer adjustment controls
+function disableTimerControls(){
+    
+    // Display/Hide
+    var ctrls = $("#timerControls");
+    ctrls.animate({opacity: 0}, 500)
+    ctrls.off("mouseenter");
+    ctrls.off("mouseleave");
+
+    // Disable button events
+    $("#timerUp").off("click");
+    $("#timerUp").off("mousedown");
+    $("#timerUp").off("mouseup");
+    $("#timerDown").off("click");
+    $("#timerDown").off("mousedown");
+    $("#timerDown").off("mouseup");
+}
+
+
+
+
+// --- UI updates ---------------------------------
+function updateTimer(timeText){
+    if(renderer.timerObj !== undefined)
+        renderer.timerObj.html(timeText);
+}
+
+function setTimerColorEnding(){
+    renderer.timerObj.addClass("white").addClass("pulse");
+}
+
+function setTimerStopPulse(){
+    renderer.timerObj.removeClass("pulse");
+}
+
+function setTimerColorDefault(){
+    renderer.timerObj.removeClass("white");
+}
+
+function updateAppState(state){
+    if(renderer.stateObj !== undefined)
+        renderer.stateObj.html(state);
+}
+
+
+
+
+
+
+
