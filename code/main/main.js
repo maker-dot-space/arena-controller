@@ -71,6 +71,9 @@ app.on('activate', function () {
 
 //--- Set constants and variables.
 var player = require('play-sound')(opts = {})
+var eventEmitter = require('events').EventEmitter
+var timer = new eventEmitter.EventEmitter();
+
 var startSeconds = 180; // 3 minutes
 var secondsLeft = startSeconds;
 
@@ -115,9 +118,18 @@ function initializeArena(){
 //--- Initialize the timer intervals
 function initializeTimer(){
   arenaApp.timer = setInterval(function(){
-    if(arenaApp.timerPause === false && arenaApp.playCountdown === false){
+    timerTick();
+  }, 1000);
+}
+
+//--- Timer tick
+function timerTick(){
+  if(arenaApp.timerPause === false && arenaApp.playCountdown === false){
       // Count down 1 second
       secondsLeft--;
+
+      // Trigger tick event
+      timer.emit('tick', secondsLeft);
       updateTimer();
     }      
     
@@ -127,9 +139,8 @@ function initializeTimer(){
       setAppStateUI(appStates.MATCHFINISHED);
       arenaApp.timerPause = true;
     }
-
-  }, 1000);
 }
+
 
 //--- Update timer
 function updateTimer(){
@@ -256,3 +267,10 @@ function playRedReady(){
 function playTapout(){
   player.play('./assets/tapout-game.mp3');  
 }
+
+
+
+// --- example of how to add a listner for when the timer ticks
+timer.on('tick', function(e){
+  console.log(e + " seconds left");
+});
