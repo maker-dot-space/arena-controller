@@ -71,7 +71,7 @@ app.on('activate', function () {
 
 //--- Set constants and variables.
 var player = require('play-sound')(opts = {})
-var startSeconds = 180; // 3 minutes
+var startSeconds = 35; // 3 minutes
 var secondsLeft = startSeconds;
 var arenaApp = {
   timerPause: true,
@@ -136,7 +136,10 @@ function updateTimer(){
   if(mainWindow !== null) {
     mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
     if(secondsLeft === 30)
-      mainWindow.webContents.executeJavaScript(`setTimerColorWhite()`);
+      mainWindow.webContents.executeJavaScript(`setTimerColorEnding()`);
+
+    if(secondsLeft === 1)
+      mainWindow.webContents.executeJavaScript(`setTimerStopPulse()`);
   }    
   
 }

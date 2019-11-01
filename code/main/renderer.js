@@ -105,15 +105,12 @@ function enableTimerControls(){
     $("#timerUp").on("mousedown", function(){
         timerSkip(5);       
     });
-
     $("#timerDown").on("mousedown", function(){
         timerSkip(-5);       
     });
-
     $("#timerUp").on("mouseup", function(){
         stopTimerSkip();       
     });
-
     $("#timerDown").on("mouseup", function(){
         stopTimerSkip();
     });
@@ -165,8 +162,12 @@ function updateTimer(timeText){
         renderer.timerObj.html(timeText);
 }
 
-function setTimerColorWhite(){
-    renderer.timerObj.addClass("white");
+function setTimerColorEnding(){
+    renderer.timerObj.addClass("white").addClass("pulse");
+}
+
+function setTimerStopPulse(){
+    renderer.timerObj.removeClass("pulse");
 }
 
 function setTimerColorDefault(){

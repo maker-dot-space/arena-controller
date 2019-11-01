@@ -11,16 +11,7 @@ body {
     margin: 0;
 }
 
-#state {
-    
-    margin-top: 100px;
-    font-size: 60px;
-    line-height: 10px;
-    font-family: Arial, Helvetica, sans-serif;
-    font-weight: bold;
-    text-align: center;
-}
-
+/* --- Timer --- */
 #timer {
     margin-top: 180px;
     font-family: digital;
@@ -35,6 +26,20 @@ body {
 #timer.white{
     color: #fff;
 }
+
+#timer.pulse{
+    -webkit-animation: pulse 2s linear infinite;
+}
+
+@-webkit-keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.1; }
+    100% { opacity: 1; }
+    /*0% { color: #fff; }
+    50% { color: #575757; }
+    100% { color: #fff; }*/
+}
+
 
 #timerControls {
     opacity: 0;
@@ -53,6 +58,19 @@ body {
     display: block;
     margin-top: 20px;
 }
+
+
+/* --- State --- */
+#state {
+    
+    margin-top: 100px;
+    font-size: 60px;
+    line-height: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    text-align: center;
+}
+
 
 #stateControls {
     opacity: 0;
