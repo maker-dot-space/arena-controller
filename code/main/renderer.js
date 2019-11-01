@@ -20,9 +20,7 @@ $(document).ready(function () {
     // Auto hide mouse when not using
     var idleMouseTimer;
     var forceMouseHide = false;
-
     $("body").css('cursor', 'none');
-
     $("#wrapper").mousemove(function(ev) {
             if(!forceMouseHide) {
                     $("body").css('cursor', '');
@@ -42,10 +40,37 @@ $(document).ready(function () {
 
 });
 
+// Enable start/pause/reset controls
+// Set up mouse events
+function enableStateControls(){
+    
+    // Display/Hide
+    var ctrls = $("#stateControls");
+    ctrls.on("mouseenter", function(){
+        ctrls.animate({opacity: 1}, 300)
+    });
+
+    ctrls.on("mouseleave", function(){
+        ctrls.animate({opacity: 0}, 500)
+    });
+
+    // Button events
+    $("#stateStart").on("click", function(){
+        remote.app.startTimer();       
+    });
+
+    $("#statePause").on("click", function(){
+        remote.app.pauseTimer();
+    });
+
+    $("#stateReset").on("click", function(){
+        remote.app.resetTimer();
+    });
+}
 
 
 
-// --- Methods available to the main process
+// --- Methods available to the main process -----------------------------------------------------
 
 // --- Events -------------------------------
 function enableTimerControls(){
@@ -57,6 +82,11 @@ function enableTimerControls(){
     });
 
     ctrls.on("mouseleave", function(){
+        
+        // Make sure that the timer skip is disabled
+        stopTimerSkip();
+
+        // Hide controls
         ctrls.animate({opacity: 0}, 500)
     });
 
@@ -108,7 +138,7 @@ function stopTimerSkip(){
 }
 
 
-
+// Disable the timer adjustment controls
 function disableTimerControls(){
     
     // Display/Hide
@@ -127,31 +157,7 @@ function disableTimerControls(){
 }
 
 
-function enableStateControls(){
-    
-    // Display/Hide
-    var ctrls = $("#stateControls");
-    ctrls.on("mouseenter", function(){
-        ctrls.animate({opacity: 1}, 300)
-    });
 
-    ctrls.on("mouseleave", function(){
-        ctrls.animate({opacity: 0}, 500)
-    });
-
-    // Button events
-    $("#stateStart").on("click", function(){
-        remote.app.startTimer();       
-    });
-
-    $("#statePause").on("click", function(){
-        remote.app.pauseTimer();
-    });
-
-    $("#stateReset").on("click", function(){
-        remote.app.resetTimer();
-    });
-}
 
 // --- UI updates ---------------------------------
 function updateTimer(timeText){
