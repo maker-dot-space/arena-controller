@@ -71,12 +71,8 @@ app.on('activate', function () {
 
 //--- Set constants and variables.
 var player = require('play-sound')(opts = {})
-var startSeconds = 35; // 3 minutes
+var startSeconds = 180; // 3 minutes
 var secondsLeft = startSeconds;
-var arenaApp = {
-  timerPause: true,
-  playCountdown: false
-};
 
 const appStates = {
   LOADIN: 1,
@@ -92,7 +88,13 @@ const appStates = {
     5: {name: 'MATCH FINISHED'}
   }
 }
-  
+
+var arenaApp = {
+  timerPause: true,
+  playCountdown: false,
+  appState: appStates.LOADIN
+};
+
 //--- Initialize the arena
 function initializeArena(){
 
@@ -165,6 +167,7 @@ function setAppStateUI(state){ // expects an appState
   
   if(mainWindow !== null){
     app.setUiText(appStates.properties[state].name);
+    arenaApp.appState = state;
   
     switch(state) {
       case appStates.LOADIN:
