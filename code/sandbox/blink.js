@@ -1,20 +1,51 @@
 var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
-var LED = new Gpio(5, 'out'); //use GPIO pin 4, and specify that it is output
 
-var blinkInterval = setInterval(blinkLED, 250); //run the blinkLED function every 250ms
+const MCP_Blue_Ready_LED = new Gpio(25, 'high');
+const MCP_Red_Ready_LED = new Gpio(5, 'high');
+const Remote_Blue_Ready_LED = new Gpio(4, 'high');
+const Remote_Red_Ready_LED = new Gpio(10, 'high');
+const Start_Button_LED = new Gpio(16, 'high');
+const Pause_Button_LED = new Gpio(20, 'high');
+const Reset_Button_LED = new Gpio(21, 'high');
+const InMatch_LED = new Gpio(9, 'high');
+const eStop_LED = new Gpio(6, 'high');
+const Standby_LED = new Gpio(26, 'high');
+const WaitForReady_LED = new Gpio(11, 'high');
 
-function blinkLED() { //function to start blinking
-  if (LED.readSync() === 0) { //check the pin state, if the state is 0 (or off)
-    LED.writeSync(1); //set pin state to 1 (turn LED on)
-  } else {
-    LED.writeSync(0); //set pin state to 0 (turn LED off)
+var arenaApp = {
+  timerPause: true,
+  playCountdown: false,  
+  blink: false,
+  blinkInterval: null
+};
+
+//var blinkInterval = setInterval(blinkLED, 250); //run the blinkLED function every 250ms
+arenaApp.blink = true;
+StartBlink([MCP_Blue_Ready_LED,MCP_Red_Ready_LED,WaitForReady_LED]);
+
+function blinkLED(LEDS) { //function to start blinking
+  for (i=0;i<LEDS.length;i++){
+    LEDS[i].writeSync(LEDS[i].readSync() ^ 1);
   }
 }
 
-function endBlink() { //function to stop blinking
-  clearInterval(blinkInterval); // Stop blink intervals
-  LED.writeSync(0); // Turn LED off
-  LED.unexport(); // Unexport GPIO to free resources
+function endBlink(LEDS) { //function to stop blinking
+  clearInterval(arenaApp.blinkInterval); // Stop blink intervals
+  for (i=0;i<LEDS.length;i++){
+    LEDS[i].writeSync(1);
+    LEDS[i].unexport(); // Unexport GPIO to free resources
+  }  
 }
 
-setTimeout(endBlink, 5000); //stop blinking after 5 seconds
+function StartBlink(LEDS) {
+  arenaApp.blinkInterval = setInterval(function(){
+    if (arenaApp.blink){
+      blinkLED(LEDS);
+    } else {
+      endBlink(LEDS);
+    }
+  }, 250); 
+}
+
+// setTimeout used to SIMULATING A BUTTON CLICK
+setTimeout(function(){arenaApp.blink=false}, 5000); //stop blinking after 5 seconds

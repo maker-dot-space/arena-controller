@@ -101,7 +101,9 @@ const appStates = {
 var arenaApp = {
   timerPause: true,
   playCountdown: false,
-  appState: appStates.LOADIN
+  appState: appStates.LOADIN,
+  blink: false,
+  blinkInterval: null
 };
 
 //--- Initialize the arena
@@ -421,6 +423,7 @@ Blue_Ready_Button.watch((err, value) => {
   }
   
   if (debugMode) {console.log("Blue Ready Button Pressed")};
+  
   Remote_Blue_Ready_LED.writeSync(0);
   
   playBlueReady();
@@ -563,7 +566,47 @@ function Blink_Ready(leds){
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// --- Blink Function
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function blinkLED(LEDS) { //function to start blinking
+  for (i=0;i<LEDS.length;i++){
+    LEDS[i].writeSync(LEDS[i].readSync() ^ 1);
+  }
+}
+
+function endBlink(LEDS) { //function to stop blinking
+  clearInterval(arenaApp.blinkInterval); // Stop blink intervals
+  for (i=0;i<LEDS.length;i++){
+    LEDS[i].writeSync(1);    
+  }  
+}
+
+function stopBlink(){
+  arenaApp.blink = false;
+}
+
+function StartBlink(LEDS) {
+  arenaApp.blink = true;
+
+  arenaApp.blinkInterval = setInterval(function(){
+    if(debugMode){"Starting Blink"};
+
+    if (arenaApp.blink){
+      blinkLED(LEDS);
+    } else {
+      endBlink(LEDS);
+    }
+  }, 250); 
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- LED Initilization
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 LED_ALL_OFF(); // turn off ALL LEDs to start
 LED_Test_Sequence(); // turn each LED on/off in sequence then flash ALL leds for 2 seconds
+
+// TURN OFF BEFORE PRODUCTION! 
+
+StartBlink([MCP_Blue_Ready_LED,MCP_Red_Ready_LED,WaitForReady_LED]);
+// setTimeout used to SIMULATING A BUTTON CLICK
+setTimeout(function(){stopBlink()}, 5000); //stop blinking after 5 seconds
