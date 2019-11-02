@@ -287,24 +287,24 @@ timer.on('tick', function(e){
 ///////////////////////////////////////////////
 const Gpio = require('onoff').Gpio;
 
-const Start_Button = new Gpio(16, 'in', 'rising', {debounceTimeout: 100});
-const Pause_Button = new Gpio(6, 'in', 'rising', {debounceTimeout: 100});
-const Reset_Button = new Gpio(5, 'in', 'rising', {debounceTimeout: 100});
-const eStop_Button = new Gpio(25, 'in', 'rising', {debounceTimeout: 100});
-const Blue_Ready_Button = new Gpio(13, 'in', 'falling', {debounceTimeout: 100});
-const Red_Ready_Button = new Gpio(27, 'in', 'falling', {debounceTimeout: 100});
+const Start_Button = new Gpio(17, 'in', 'rising', {debounceTimeout: 100});
+const Pause_Button = new Gpio(12, 'in', 'rising', {debounceTimeout: 100});
+const Reset_Button = new Gpio(27, 'in', 'rising', {debounceTimeout: 100});
+const eStop_Button = new Gpio(22, 'in', 'rising', {debounceTimeout: 100});
+const Blue_Ready_Button = new Gpio(23, 'in','falling', {debounceTimeout: 100});
+const Red_Ready_Button = new Gpio(24, 'in', 'falling', {debounceTimeout: 100});
 
-const MCP_Blue_Ready_LED = new Gpio(22, 'high'), //use declare variables for all the GPIO output pins
-  MCP_Red_Ready_LED = new Gpio(23, 'high'),
-  Remote_Blue_Ready_LED = new Gpio(26, 'high'),
-  Remote_Red_Ready_LED = new Gpio(21, 'high'),
-  Start_Button_LED = new Gpio(7, 'high'),
-  Pause_Button_LED = new Gpio(8, 'high'),
-  Reset_Button_LED = new Gpio(11, 'high'),
+const MCP_Blue_Ready_LED = new Gpio(25, 'high'), //use declare variables for all the GPIO output pins
+  MCP_Red_Ready_LED = new Gpio(5, 'high'),
+  Remote_Blue_Ready_LED = new Gpio(4, 'high'),
+  Remote_Red_Ready_LED = new Gpio(10, 'high'),
+  Start_Button_LED = new Gpio(16, 'high'),
+  Pause_Button_LED = new Gpio(20, 'high'),
+  Reset_Button_LED = new Gpio(21, 'high'),
   InMatch_LED = new Gpio(9, 'high'),
-  eStop_LED = new Gpio(24, 'high'),
-  Standby_LED = new Gpio(10, 'high'),
-  WaitForReady_LED = new Gpio(18, 'high');
+  eStop_LED = new Gpio(6, 'high'),
+  Standby_LED = new Gpio(26, 'high'),
+  WaitForReady_LED = new Gpio(11, 'high');
 
 //Put all the LED variables in an array
 var leds = [Remote_Blue_Ready_LED,MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Remote_Red_Ready_LED,Start_Button_LED,Pause_Button_LED,Reset_Button_LED,InMatch_LED,eStop_LED,Standby_LED,WaitForReady_LED];
@@ -351,11 +351,11 @@ eStop_Button.watch((err, value) => {
 
   eStop_State = !eStop_State; //flip button state
 
-  // if (eStop_State){
-  //   SystemState.State = SystemStates.LoadIn;    
-  // } else {   
-  //   SystemState.State = SystemStates.PreMatch;    
-  // }
+  if (eStop_State){
+    SystemState.State = SystemStates.LoadIn;    
+  } else {   
+    SystemState.State = SystemStates.PreMatch;    
+  }
 });
 
 
@@ -398,7 +398,8 @@ eStop_Button.watch((err, value) => {
     
     console.log("Blue Ready Button Pressed");
     Remote_Blue_Ready_LED.writeSync(0);
-    app.pauseTimer();
+    
+    playBlueReady();
   })
 
   Red_Ready_Button.watch((err, value) => {
@@ -490,7 +491,7 @@ const SystemState_Handler = {
 }
 
 const system = new System();
-//const SystemState = new Proxy(system, SystemState_Handler);
+const SystemState = new Proxy(system, SystemState_Handler);
 
 ////////////////////////////////////////////
 //setTimeout(endBlink, 5000); //stop blinking after 5 seconds

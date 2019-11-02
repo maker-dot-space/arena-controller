@@ -3,7 +3,7 @@ var { Timer } = require('easytimer.js');
 var timerInstance = new Timer();
 
 const Start_Button = new Gpio(17, 'in', 'rising', {debounceTimeout: 100});
-const Pause_Button = new Gpio(8, 'in', 'rising', {debounceTimeout: 100});
+const Pause_Button = new Gpio(12, 'in', 'rising', {debounceTimeout: 100});
 const Reset_Button = new Gpio(27, 'in', 'rising', {debounceTimeout: 100});
 const eStop_Button = new Gpio(22, 'in', 'rising', {debounceTimeout: 100});
 const Blue_Ready_Button = new Gpio(23, 'in','falling', {debounceTimeout: 100});
@@ -67,6 +67,28 @@ eStop_Button.watch((err, value) => {
 
 });
 
+Blue_Ready_Button.watch((err, value) => {
+	if (err) {
+		throw err;
+	}
+  console.log("Blue Ready Pressed");
+  
+  MCP_Blue_Ready_LED.writeSync(MCP_Blue_Ready_LED.readSync() ^ 1);
+  //Remote_Blue_Ready_LED.writeSync(0);
+  //Remote_Blue_Ready_LED.writeSync(Remote_Blue_Ready_LED.readSync() ^ 1);
+
+});
+
+Red_Ready_Button.watch((err, value) => {
+      	if (err) {
+		throw err;
+	}
+  console.log("Red Ready Pressed");
+  
+  MCP_Red_Ready_LED.writeSync(MCP_Red_Ready_LED.readSync() ^ 1);
+  //Remote_Red_Ready_LED.writeSync(Remote_Red_Ready_LED.readSync() ^ 1);
+}); 
+
 Start_Button.watch((err, value) => {
     if (err) {
       throw err;
@@ -83,7 +105,8 @@ Pause_Button.watch((err, value) => {
   }
   console.log("Pause Pressed");
   
-  
+  Pause_Button_LED.writeSync(Pause_Button_LED.readSync() ^ 1);
+  Standby_LED.writeSync(Standby_LED.readSync() ^ 1);
 });
 
 Reset_Button.watch((err, value) => {
@@ -91,8 +114,10 @@ Reset_Button.watch((err, value) => {
     throw err;
   }
 
-  Reset_Button_LED.writeSync(0);
-  WaitForReady_LED.writeSync(0);
+  console.log("Reset Pressed");
+
+  Reset_Button_LED.writeSync(Reset_Button_LED.readSync() ^ 1);
+  WaitForReady_LED.writeSync(WaitForReady_LED.readSync() ^ 1);
 })
 
 function msleep(n) {

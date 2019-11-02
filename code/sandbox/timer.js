@@ -4,7 +4,7 @@ var timerInstance = new Timer();
 
 const Start_Button = new Gpio(17, 'in', 'rising', {debounceTimeout: 100});
 const Pause_Button = new Gpio(8, 'in', 'rising', {debounceTimeout: 100});
-const Reset_Button = new Gpio(27), 'in', 'rising', {debounceTimeout: 100});
+const Reset_Button = new Gpio(27, 'in', 'rising', {debounceTimeout: 100});
 const eStop_Button = new Gpio(22, 'in', 'rising', {debounceTimeout: 100});
 const Blue_Ready_Button = new Gpio(23, 'in', 'both', {debounceTimeout: 100});
 const Red_Ready_Button = new Gpio(24, 'in', 'both', {debounceTimeout: 100});
