@@ -1,5 +1,5 @@
 // Debug Mode
-const debugMode = true;
+const debugMode = false;
 
 // Modules to control application life and create native browser window
 const {app, BrowserWindow} = require('electron')
@@ -253,15 +253,6 @@ app.startTimer = function(){
 app.pauseTimer = function(){
   setAppStateUI(appStates.MATCHPAUSED);
   arenaApp.timerPause = true;
-
-  // GPIO Related Code
-  LED_ALL_OFF();
-  Start_Button_LED.writeSync(0); // ON
-  Reset_Button_LED.writeSync(0); // ON
-  InMatch_LED.writeSync(0); // ON
-  Standby_LED.writeSync(0); // ON
-
-
 }
 
 //--- Reset clock
@@ -286,6 +277,7 @@ app.setUiText = function(text){
 function playBlueReady(){
   player.play('./assets/blue.mp3');  
 }
+
 
 function playRedReady(){
   player.play('./assets/red.mp3');  
@@ -404,6 +396,13 @@ Pause_Button.watch((err, value) => {
   Pause_Button_LED.writeSync(Pause_Button_LED.readSync() ^ 1);
   Standby_LED.writeSync(Standby_LED.readSync() ^ 1);    
   app.pauseTimer();
+  
+  // GPIO Related Code
+  LED_ALL_OFF();
+  Start_Button_LED.writeSync(0); // ON
+  Reset_Button_LED.writeSync(0); // ON
+  InMatch_LED.writeSync(0); // ON
+  Standby_LED.writeSync(0); // ON
 });
 
 Reset_Button.watch((err, value) => {
