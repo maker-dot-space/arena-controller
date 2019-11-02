@@ -6,8 +6,8 @@ const Start_Button = new Gpio(17, 'in', 'rising', {debounceTimeout: 100});
 const Pause_Button = new Gpio(12, 'in', 'rising', {debounceTimeout: 100});
 const Reset_Button = new Gpio(27, 'in', 'rising', {debounceTimeout: 100});
 const eStop_Button = new Gpio(22, 'in', 'rising', {debounceTimeout: 100});
-const Blue_Ready_Button = new Gpio(23, 'in','falling', {debounceTimeout: 100});
-const Red_Ready_Button = new Gpio(24, 'in', 'falling', {debounceTimeout: 100});
+const Blue_Ready_Button = new Gpio(23, 'in','rising', {debounceTimeout: 100});
+const Red_Ready_Button = new Gpio(24, 'in', 'rising', {debounceTimeout: 100});
 
 const MCP_Blue_Ready_LED = new Gpio(25, 'high'), //use declare variables for all the GPIO output pins
   MCP_Red_Ready_LED = new Gpio(5, 'high'),
