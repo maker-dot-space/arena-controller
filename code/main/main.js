@@ -1,5 +1,5 @@
 // Debug Mode
-const debugMode = false;
+const debugMode = true;
 
 // Modules to control application life and create native browser window
 const {app, BrowserWindow} = require('electron')
@@ -77,9 +77,9 @@ var player = require('play-sound')(opts = {})
 var eventEmitter = require('events').EventEmitter
 var timer = new eventEmitter.EventEmitter();
 
-var startSeconds = 180; // 3 minutes - Set Timer Length
+var startSeconds = 120; // 3 minutes - Set Timer Length
 
-if (debugMode) { startSeconds=41}; // override time for debugging
+if (debugMode) { startSeconds=21}; // override time for debugging
 
 var secondsLeft = startSeconds;
 
@@ -145,7 +145,7 @@ function timerTick(){
     if(secondsLeft == 1 && arenaApp.timerPause === false){
       setTimeout(function(){
         player.play('./assets/air-horn.mp3');
-      }, 450)
+      }, 50)
       
     }
 
@@ -162,7 +162,7 @@ function updateTimer(){
   // Update the UI
   if(mainWindow !== null) {
     mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
-    if(secondsLeft === 30)
+    if(secondsLeft === 20)
       mainWindow.webContents.executeJavaScript(`setTimerColorEnding()`);
 
     if(secondsLeft === 1)
