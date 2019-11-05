@@ -16,6 +16,7 @@ $(document).ready(function () {
     renderer.timerObj = $("#timer");
     renderer.stateObj = $("#state");
     enableStateControls();
+    enableSystemControls();
 
     // Auto hide mouse when not using
     var idleMouseTimer;
@@ -40,6 +41,33 @@ $(document).ready(function () {
 
 });
 
+// Enable system controls
+// Set up mouse events
+function enableSystemControls(){
+    
+    // Display/Hide
+    var ctrls = $("#systemControls");
+    ctrls.on("mouseenter", function(){
+        ctrls.animate({opacity: 1}, 300)
+    });
+
+    ctrls.on("mouseleave", function(){
+        ctrls.animate({opacity: 0}, 500)
+    });
+
+    // Button events
+    $("#rebootSystem").on("click", function(){
+        if(confirm("Reboot System?"))
+            rebootSystem();       
+    });
+
+    $("#shutdownSystem").on("click", function(){
+        if(confirm("Shutdown System?"))
+            shutdownSystem();
+    });
+}
+
+
 // Enable start/pause/reset controls
 // Set up mouse events
 function enableStateControls(){
@@ -56,15 +84,15 @@ function enableStateControls(){
 
     // Button events
     $("#stateStart").on("click", function(){
-        remote.app.startTimer();       
+        startTimer();       
     });
 
     $("#statePause").on("click", function(){
-        remote.app.pauseTimer();
+        pauseTimer();
     });
 
     $("#stateReset").on("click", function(){
-        remote.app.resetTimer();
+        resetTimer();
     });
 }
 
@@ -170,6 +198,10 @@ function setTimerStopPulse(){
     renderer.timerObj.removeClass("pulse");
 }
 
+function setTimerStartPulse(){
+    renderer.timerObj.addClass("pulse");
+}
+
 function setTimerColorDefault(){
     renderer.timerObj.removeClass("white");
 }
@@ -180,8 +212,64 @@ function updateAppState(state){
 }
 
 
+// --- Shared methods ---------------------------------------------------------------------
+
+function shutdownSystem(){
+    remote.app.shutdown();
+}
+
+function rebootSystem(){
+    remote.app.reboot();
+}
+
+function startTimer(){
+    remote.app.startTimer();
+}
+
+function pauseTimer(){
+    remote.app.pauseTimer();
+}
+
+function resetTimer(){
+    remote.app.resetTimer();
+}
 
 
+// --- Keyboard shortcuts -------------------------------------------------------------------
 
+// --- Pause / start
+Mousetrap.bind('space', function() { 
 
+    var currentState = remote.app.getAppState();
+    if(currentState === 3){ // In Match
+        pauseTimer();
+    } else {
+        startTimer();
+    }
 
+ });
+
+// --- Red Ready
+Mousetrap.bind('R', function() { 
+    remote.app.setRedReady();
+});
+
+// --- Blue Ready
+Mousetrap.bind('B', function() { 
+    remote.app.setBlueReady();
+});
+
+// --- Reset
+Mousetrap.bind('X', function() { 
+    resetTimer();
+});
+
+// --- Shutdown
+Mousetrap.bind('ctrl+shift+q', function() { 
+    shutdownSystem();
+});
+
+// --- Reboot
+Mousetrap.bind('ctrl+shift+r', function() { 
+    rebootSystem();
+});

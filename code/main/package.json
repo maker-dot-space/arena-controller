@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "epoll": "^3.0.0",
+    "mousetrap": "^1.6.3",
     "onoff": "^5.0.0",
     "play-sound": "^1.1.3"
   }

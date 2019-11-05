@@ -59,10 +59,31 @@ body {
     margin-top: 20px;
 }
 
+/* -- System Controls --- */
+#systemControls {
+    opacity: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+    position: absolute;
+    top: 50px;
+    right: 50px;
+}
+
+
+.btn-system{
+    border:1px solid; -webkit-border-radius: 3px; -moz-border-radius: 3px;border-radius: 3px;font-size:22px;font-family:arial, helvetica, sans-serif; 
+    padding: 20px 30px; text-decoration:none; display:inline-block;font-weight:bold; color: #FFFFFF;
+    min-width: 80px;
+    text-align: center;
+    margin-right: 25px;
+}
+
 
 /* --- State --- */
 #state {
-    
     margin-top: 100px;
     font-size: 60px;
     line-height: 10px;

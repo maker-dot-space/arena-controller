@@ -10,6 +10,11 @@
       <div id="state"></div>
       <div id="timer"></div>
 
+      <div id="systemControls">
+        <a href="javascript: void(0);" id="rebootSystem" class="btn-system btn-white">Reboot</a>
+        <a href="javascript: void(0);" id="shutdownSystem" class="btn-system btn-white">Shutdown</a>
+      </div>
+
       <div id="stateControls">
         <a href="javascript: void(0);" id="stateStart" class="btn-state btn-green">Start</a>
         <a href="javascript: void(0);" id="statePause" class="btn-state btn-yellow">Pause</a>
@@ -31,6 +36,7 @@
     <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
 
     <script src="./jquery-1.12.4.js"></script>
+    <script src="./mousetrap.js"></script>
     <script src="./renderer.js"></script>
 
     <script>if (window.module) module = window.module;</script>
