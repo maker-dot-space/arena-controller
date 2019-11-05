@@ -262,6 +262,14 @@ app.reboot = function reboot(callback){
 
 //#endregion
 
+//#region Keyboard shortcuts      ///////////////////////////////////////////////////////////////////////////////
+
+mainWindow.addEventListener('keyup', event => {
+  console.log(event);
+});
+
+//#endregion
+
 //#region Methods for updating the UI     ///////////////////////////////////////////////////////////////////////////////////
 
 //--- Start timer
@@ -306,14 +314,6 @@ function playRedReady(){
 function playTapout(){
   player.play('./assets/tapout-game.mp3');  
 }
-
-
-
-// --- example of how to add a listner for when the timer ticks
-timer.on('tick', function(e){  
-  if (debugMode) {console.log(e + " seconds left")};
-});
-
 
 //#endregion
 
@@ -483,6 +483,13 @@ Red_Ready_Button.watch((err, value) => {
 
 //#endregion
 
+
+
+
+// --- example of how to add a listner for when the timer ticks
+timer.on('tick', function(e){  
+  if (debugMode) {console.log(e + " seconds left")};
+});
 
 
 //--- Set the state of the app in the hardware
