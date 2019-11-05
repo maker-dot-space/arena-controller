@@ -1,6 +1,8 @@
 // Debug Mode
 const debugMode = true;
 
+//#region Electron initilization    ///////////////////////////////////////////////////////////////////////////////////
+
 // Modules to control application life and create native browser window
 const {app, BrowserWindow} = require('electron')
 const path = require('path')
@@ -63,19 +65,20 @@ app.on('activate', function () {
   if (mainWindow === null) createWindow()
 })
 
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
-
+//#endregion
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// --- Main App
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//#region UI setup    ///////////////////////////////////////////////////////////////////////////////////
+
 //--- Set constants and variables.
-var player = require('play-sound')(opts = {})
-var eventEmitter = require('events').EventEmitter
+var player = require('play-sound')(opts = {});
+var eventEmitter = require('events').EventEmitter;
+var exec = require('child_process').exec;
 var timer = new eventEmitter.EventEmitter();
+var stateChanged = new eventEmitter.EventEmitter();
 
 var startSeconds = 120; // 3 minutes - Set Timer Length
 
@@ -155,6 +158,9 @@ function timerTick(){
     }
 }
 
+//#endregion
+
+//#region UI private methods    ///////////////////////////////////////////////////////////////////////////////////
 
 //--- Update timer
 function updateTimer(){
@@ -162,7 +168,7 @@ function updateTimer(){
   // Update the UI
   if(mainWindow !== null) {
     mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
-    if(secondsLeft === 20)
+    if(secondsLeft === 15)
       mainWindow.webContents.executeJavaScript(`setTimerColorEnding()`);
 
     if(secondsLeft === 1)
@@ -193,22 +199,27 @@ function setAppStateUI(state){ // expects an appState
   if(mainWindow !== null){
     app.setUiText(appStates.properties[state].name);
     arenaApp.appState = state;
+
+    // Fire event indicating the state changed
+    stateChanged.emit('changed', state);
   
     switch(state) {
       case appStates.LOADIN:
         mainWindow.webContents.executeJavaScript(`enableTimerControls()`);
         mainWindow.webContents.executeJavaScript(`setTimerColorDefault()`);
         mainWindow.webContents.executeJavaScript(`setTimerStopPulse()`);
-        LoadIn(); // GPIO related code during LoadIn State
         break;
       case appStates.PREMATCH:
         mainWindow.webContents.executeJavaScript(`enableTimerControls()`);
-        PreMatch(); // GPIO related code during PreMatch State
         break;
       case appStates.MATCH:
         mainWindow.webContents.executeJavaScript(`disableTimerControls()`);
-        Match(); // GPIO related code during Match State
+        if(secondsLeft <= 15)
+          mainWindow.webContents.executeJavaScript(`setTimerStartPulse()`);       
         break;
+      case appStates.MATCHPAUSED:
+          mainWindow.webContents.executeJavaScript(`setTimerStopPulse()`);
+          break;
     }
   }    
 }
@@ -237,10 +248,21 @@ function playCountdownToFight(){
   }, 4000);
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// --- Methods for updating the UI
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//#endregion
 
+//#region System commands    ///////////////////////////////////////////////////////////////////////////////////
+
+app.shutdown = function shutdown(callback){
+  exec('sudo shutdown -h now', function(error, stdout, stderr){ callback(stdout); });
+}
+
+app.reboot = function reboot(callback){
+  exec('sudo shutdown -r now', function(error, stdout, stderr){ callback(stdout); });
+}
+
+//#endregion
+
+//#region Methods for updating the UI     ///////////////////////////////////////////////////////////////////////////////////
 
 //--- Start timer
 app.startTimer = function(){
@@ -268,11 +290,9 @@ app.setUiText = function(text){
   mainWindow.webContents.executeJavaScript(`updateAppState('` + text + `')`);
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// --- Methods for playing sounds
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//#endregion
 
-
+//#region Methods for playing sounds    ///////////////////////////////////////////////////////////////////////////////////
 
 function playBlueReady(){
   player.play('./assets/blue.mp3');  
@@ -294,9 +314,14 @@ timer.on('tick', function(e){
   if (debugMode) {console.log(e + " seconds left")};
 });
 
+
+//#endregion
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- GPIO Setup
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//#region GPIO Setup
+
 const Gpio = require('onoff').Gpio;
 
 const Start_Button = new Gpio(17, 'in', 'rising', {debounceTimeout: 100});
@@ -321,9 +346,13 @@ const WaitForReady_LED = new Gpio(11, 'high');
 //Put all the LED variables in an array
 var leds = [Remote_Blue_Ready_LED,MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Remote_Red_Ready_LED,Start_Button_LED,Pause_Button_LED,Reset_Button_LED,InMatch_LED,eStop_LED,Standby_LED,WaitForReady_LED];
 
+//#endregion
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- GPIO Related Functions
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//#region GPIO Realted Functions
+
 function LED_ALL_OFF(){
   leds.forEach(function(currentValue) { //for each item in array
     currentValue.writeSync(1); //turn off LED
@@ -354,9 +383,21 @@ function LED_Test_Sequence(){
   LED_ALL_OFF();
 }
 
+function unexportOnClose(){
+  Start_Button.unexport();      
+  Pause_Button.unexport();  
+  Reset_Button.unexport();
+
+  LED_ALL_OFF();
+}
+
+//#endregion
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- GPIO Button Watchers
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//#region GPIO Button Watchers
+
 eStop_Button.watch((err, value) => {
   if (err) {
     throw err;
@@ -439,13 +480,37 @@ Red_Ready_Button.watch((err, value) => {
   playRedReady();
 })
 
-function unexportOnClose(){
-  Start_Button.unexport();      
-  Pause_Button.unexport();  
-  Reset_Button.unexport();
 
-  LED_ALL_OFF();
-}
+//#endregion
+
+
+
+//--- Set the state of the app in the hardware
+stateChanged.on('changed', function setAppStateHardware(state){ // expects an appState
+
+    if(debugMode) console.log("Hardware state changed: " + appStates.properties[state].name);  
+  
+    switch(state) {
+      case appStates.LOADIN:
+        LoadIn(); // GPIO related code during LoadIn State
+        break;
+      case appStates.PREMATCH:
+        PreMatch(); // GPIO related code during PreMatch State
+        break;
+      case appStates.MATCH:
+        Match(); // GPIO related code during Match State
+        break;
+      case appStates.MATCHPAUSED:
+          
+          break;
+
+      case appStates.MATCHFINISHED:
+      
+          break;
+    }
+  
+});
+
 
 function LoadIn(){
   //if (blinkInterval){clearInterval(blinkInterval)};
@@ -602,10 +667,11 @@ function StartBlink(LEDS) {
 // --- LED Initilization
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 LED_ALL_OFF(); // turn off ALL LEDs to start
-LED_Test_Sequence(); // turn each LED on/off in sequence then flash ALL leds for 2 seconds
+//LED_Test_Sequence(); // turn each LED on/off in sequence then flash ALL leds for 2 seconds
 
 // TURN OFF BEFORE PRODUCTION! 
 
-StartBlink([MCP_Blue_Ready_LED,MCP_Red_Ready_LED,WaitForReady_LED]);
+//StartBlink([MCP_Blue_Ready_LED,MCP_Red_Ready_LED,WaitForReady_LED]);
 // setTimeout used to SIMULATING A BUTTON CLICK
-setTimeout(function(){stopBlink()}, 5000); //stop blinking after 5 seconds
+//setTimeout(function(){stopBlink()}, 5000); //stop blinking after 5 seconds
+

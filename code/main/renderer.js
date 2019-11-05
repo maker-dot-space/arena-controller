@@ -16,6 +16,7 @@ $(document).ready(function () {
     renderer.timerObj = $("#timer");
     renderer.stateObj = $("#state");
     enableStateControls();
+    enableSystemControls();
 
     // Auto hide mouse when not using
     var idleMouseTimer;
@@ -39,6 +40,33 @@ $(document).ready(function () {
     });
 
 });
+
+// Enable system controls
+// Set up mouse events
+function enableSystemControls(){
+    
+    // Display/Hide
+    var ctrls = $("#systemControls");
+    ctrls.on("mouseenter", function(){
+        ctrls.animate({opacity: 1}, 300)
+    });
+
+    ctrls.on("mouseleave", function(){
+        ctrls.animate({opacity: 0}, 500)
+    });
+
+    // Button events
+    $("#rebootSystem").on("click", function(){
+        if(confirm("Reboot System?"))
+            remote.app.reboot();       
+    });
+
+    $("#shutdownSystem").on("click", function(){
+        if(confirm("Shutdown System?"))
+            remote.app.shutdown();
+    });
+}
+
 
 // Enable start/pause/reset controls
 // Set up mouse events
@@ -168,6 +196,10 @@ function setTimerColorEnding(){
 
 function setTimerStopPulse(){
     renderer.timerObj.removeClass("pulse");
+}
+
+function setTimerStartPulse(){
+    renderer.timerObj.addClass("pulse");
 }
 
 function setTimerColorDefault(){
