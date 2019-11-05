@@ -77,9 +77,9 @@ var player = require('play-sound')(opts = {})
 var eventEmitter = require('events').EventEmitter
 var timer = new eventEmitter.EventEmitter();
 
-var startSeconds = 180; // 3 minutes - Set Timer Length
+var startSeconds = 120; // 3 minutes - Set Timer Length
 
-if (debugMode) { startSeconds=41}; // override time for debugging
+if (debugMode) { startSeconds=21}; // override time for debugging
 
 var secondsLeft = startSeconds;
 
@@ -145,7 +145,7 @@ function timerTick(){
     if(secondsLeft == 1 && arenaApp.timerPause === false){
       setTimeout(function(){
         player.play('./assets/air-horn.mp3');
-      }, 450)
+      }, 50)
       
     }
 
@@ -162,7 +162,7 @@ function updateTimer(){
   // Update the UI
   if(mainWindow !== null) {
     mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
-    if(secondsLeft === 30)
+    if(secondsLeft === 20)
       mainWindow.webContents.executeJavaScript(`setTimerColorEnding()`);
 
     if(secondsLeft === 1)
@@ -253,15 +253,6 @@ app.startTimer = function(){
 app.pauseTimer = function(){
   setAppStateUI(appStates.MATCHPAUSED);
   arenaApp.timerPause = true;
-
-  // GPIO Related Code
-  LED_ALL_OFF();
-  Start_Button_LED.writeSync(0); // ON
-  Reset_Button_LED.writeSync(0); // ON
-  InMatch_LED.writeSync(0); // ON
-  Standby_LED.writeSync(0); // ON
-
-
 }
 
 //--- Reset clock
@@ -286,6 +277,7 @@ app.setUiText = function(text){
 function playBlueReady(){
   player.play('./assets/blue.mp3');  
 }
+
 
 function playRedReady(){
   player.play('./assets/red.mp3');  
@@ -404,6 +396,13 @@ Pause_Button.watch((err, value) => {
   Pause_Button_LED.writeSync(Pause_Button_LED.readSync() ^ 1);
   Standby_LED.writeSync(Standby_LED.readSync() ^ 1);    
   app.pauseTimer();
+  
+  // GPIO Related Code
+  LED_ALL_OFF();
+  Start_Button_LED.writeSync(0); // ON
+  Reset_Button_LED.writeSync(0); // ON
+  InMatch_LED.writeSync(0); // ON
+  Standby_LED.writeSync(0); // ON
 });
 
 Reset_Button.watch((err, value) => {
