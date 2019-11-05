@@ -44,7 +44,6 @@ function createWindow () {
     initializeArena();   
   })
   
-
 }
 
 // This method will be called when Electron has finished
@@ -106,7 +105,9 @@ var arenaApp = {
   playCountdown: false,
   appState: appStates.LOADIN,
   blink: false,
-  blinkInterval: null
+  blinkInterval: null,
+  redReady: false,
+  blueReady: false
 };
 
 //--- Initialize the arena
@@ -208,6 +209,10 @@ function setAppStateUI(state){ // expects an appState
         mainWindow.webContents.executeJavaScript(`enableTimerControls()`);
         mainWindow.webContents.executeJavaScript(`setTimerColorDefault()`);
         mainWindow.webContents.executeJavaScript(`setTimerStopPulse()`);
+
+        arenaApp.redReady = false;
+        arenaApp.blueReady = false;
+
         break;
       case appStates.PREMATCH:
         mainWindow.webContents.executeJavaScript(`enableTimerControls()`);
@@ -262,14 +267,6 @@ app.reboot = function reboot(callback){
 
 //#endregion
 
-//#region Keyboard shortcuts      ///////////////////////////////////////////////////////////////////////////////
-
-mainWindow.addEventListener('keyup', event => {
-  console.log(event);
-});
-
-//#endregion
-
 //#region Methods for updating the UI     ///////////////////////////////////////////////////////////////////////////////////
 
 //--- Start timer
@@ -298,6 +295,20 @@ app.setUiText = function(text){
   mainWindow.webContents.executeJavaScript(`updateAppState('` + text + `')`);
 }
 
+app.getAppState = function(){
+  return arenaApp.appState;
+};
+
+app.setRedReady = function(){
+  arenaApp.redReady = true;
+  if(debugMode) console.log("Red Ready!");
+}
+
+app.setBlueReady = function(){
+  arenaApp.blueReady = true;
+  if(debugMode) console.log("Blue Ready!");
+}
+
 //#endregion
 
 //#region Methods for playing sounds    ///////////////////////////////////////////////////////////////////////////////////
@@ -316,6 +327,7 @@ function playTapout(){
 }
 
 //#endregion
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- GPIO Setup

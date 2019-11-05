@@ -58,12 +58,12 @@ function enableSystemControls(){
     // Button events
     $("#rebootSystem").on("click", function(){
         if(confirm("Reboot System?"))
-            remote.app.reboot();       
+            rebootSystem();       
     });
 
     $("#shutdownSystem").on("click", function(){
         if(confirm("Shutdown System?"))
-            remote.app.shutdown();
+            shutdownSystem();
     });
 }
 
@@ -84,15 +84,15 @@ function enableStateControls(){
 
     // Button events
     $("#stateStart").on("click", function(){
-        remote.app.startTimer();       
+        startTimer();       
     });
 
     $("#statePause").on("click", function(){
-        remote.app.pauseTimer();
+        pauseTimer();
     });
 
     $("#stateReset").on("click", function(){
-        remote.app.resetTimer();
+        resetTimer();
     });
 }
 
@@ -212,8 +212,64 @@ function updateAppState(state){
 }
 
 
+// --- Shared methods ---------------------------------------------------------------------
+
+function shutdownSystem(){
+    remote.app.shutdown();
+}
+
+function rebootSystem(){
+    remote.app.reboot();
+}
+
+function startTimer(){
+    remote.app.startTimer();
+}
+
+function pauseTimer(){
+    remote.app.pauseTimer();
+}
+
+function resetTimer(){
+    remote.app.resetTimer();
+}
 
 
+// --- Keyboard shortcuts -------------------------------------------------------------------
 
+// --- Pause / start
+Mousetrap.bind('space', function() { 
 
+    var currentState = remote.app.getAppState();
+    if(currentState === 3){ // In Match
+        pauseTimer();
+    } else {
+        startTimer();
+    }
 
+ });
+
+// --- Red Ready
+Mousetrap.bind('R', function() { 
+    remote.app.setRedReady();
+});
+
+// --- Blue Ready
+Mousetrap.bind('B', function() { 
+    remote.app.setBlueReady();
+});
+
+// --- Reset
+Mousetrap.bind('X', function() { 
+    resetTimer();
+});
+
+// --- Shutdown
+Mousetrap.bind('ctrl+shift+q', function() { 
+    shutdownSystem();
+});
+
+// --- Reboot
+Mousetrap.bind('ctrl+shift+r', function() { 
+    rebootSystem();
+});
