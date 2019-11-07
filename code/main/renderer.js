@@ -94,6 +94,10 @@ function enableStateControls(){
     $("#stateReset").on("click", function(){
         resetTimer();
     });
+
+    $("#stateStop").on("click", function(){
+        eStop();
+    });
 }
 
 
@@ -234,6 +238,10 @@ function resetTimer(){
     remote.app.resetTimer();
 }
 
+function eStop(){
+    remote.app.eStop();
+}
+
 
 // --- Keyboard shortcuts -------------------------------------------------------------------
 
@@ -250,18 +258,23 @@ Mousetrap.bind('space', function() {
  });
 
 // --- Red Ready
-Mousetrap.bind('R', function() { 
+Mousetrap.bind('r', function() { 
     remote.app.setRedReady();
 });
 
 // --- Blue Ready
-Mousetrap.bind('B', function() { 
+Mousetrap.bind('b', function() { 
     remote.app.setBlueReady();
 });
 
 // --- Reset
-Mousetrap.bind('X', function() { 
+Mousetrap.bind('ctrl+x', function() { 
     resetTimer();
+});
+
+// --- eStop
+Mousetrap.bind('ctrl+s', function() { 
+    eStop();
 });
 
 // --- Shutdown

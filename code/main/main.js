@@ -15,8 +15,8 @@ function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     kiosk: true,
-    //width: 1500,
-    //height: 900,
+    // width: 1500,
+    // height: 900,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true
@@ -72,17 +72,30 @@ app.on('activate', function () {
 
 //#region UI setup    ///////////////////////////////////////////////////////////////////////////////////
 
-//--- Set constants and variables.
-var player = require('play-sound')(opts = {});
+//--- Set audio player.
+var mpg = require('mpg123');
+var audioOutput = { name: 'bcm2835 ALSA', address: 'hw:CARD=ALSA,DEV=0' };
+var player = new mpg.MpgPlayer(audioOutput, true);
+player.on("end", function(){
+  debugLog("sound stopped");
+  if(arenaApp.startTimerAfterSound){
+    startTimer();
+    arenaApp.startTimerAfterSound = false;
+  }
+    
+  arenaApp.soundInProgress = false;
+});
+// Test sound on load
+player.play('./assets/metronome.mp3');
+
+//--- Set included modules
 var eventEmitter = require('events').EventEmitter;
 var exec = require('child_process').exec;
 var timer = new eventEmitter.EventEmitter();
-var stateChanged = new eventEmitter.EventEmitter();
 
+//--- Set initial constants and variables
 var startSeconds = 120; // 3 minutes - Set Timer Length
-
-if (debugMode) { startSeconds=21}; // override time for debugging
-
+if (debugMode) startSeconds = 16; // override time for debugging
 var secondsLeft = startSeconds;
 
 const appStates = {
@@ -92,17 +105,25 @@ const appStates = {
   MATCHPAUSED: 4,
   MATCHFINISHED: 5,
   properties: {
-    1: {name: 'LOADING IN'},
-    2: {name: 'PRE MATCH'},
-    3: {name: 'MATCH IN PROGRESS'},
-    4: {name: 'MATCH PAUSED'},
-    5: {name: 'MATCH FINISHED'}
+    1: {name: 'LOADING&nbsp; IN'},
+    2: {name: 'PRE MATCH &nbsp; - &nbsp; ROBOTS&nbsp; GET&nbsp; READY!'},
+    3: {name: 'MATCH&nbsp; IN&nbsp; PROGRESS'},
+    4: {name: 'MATCH&nbsp; PAUSED'},
+    5: {name: 'MATCH&nbsp; FINISHED'}
+  }
+}
+
+const appPlayers = {
+  BLUE: 1,
+  RED: 2,
+  properties: {
+    1: {name: 'BLUE&nbsp; ROBOT&nbsp;'},
+    2: {name: 'RED&nbsp; ROBOT&nbsp;'}
   }
 }
 
 var arenaApp = {
-  timerPause: true,
-  playCountdown: false,
+  startTimerAfterSound: false,
   appState: appStates.LOADIN,
   blink: false,
   blinkInterval: null,
@@ -114,48 +135,50 @@ var arenaApp = {
 function initializeArena(){
 
   // Set the current state
+  arenaApp.appState = appStates.LOADIN;
+  
+  // Update the UI
   setAppStateUI(appStates.LOADIN);
+  
+  // Update the GPIOs
+  LoadIn();
  
   // Set the initial time left
   updateTimer();
-
-  // Initialize the timer
-  initializeTimer();
-
-  // TEMP testing starting the timer
-  //setTimeout(startTimer, 2000);
-
 }
 
-//--- Initialize the timer intervals
-function initializeTimer(){
+
+function startTimer(){
+  debugLog("Timer started");
+  timerTick();
   arenaApp.timer = setInterval(function(){
     timerTick();
   }, 1000);
 }
 
+function stopTimer(){
+  clearInterval(arenaApp.timer);
+  debugLog("Timer stopped");
+}
+
 //--- Timer tick
 function timerTick(){
-  if(arenaApp.timerPause === false && arenaApp.playCountdown === false){
-      // Count down 1 second
-      secondsLeft--;
+  
+    // Count down 1 second
+    secondsLeft--;
+    
+    // Update timer
+    updateTimer();
 
-      // Trigger tick event
-      timer.emit('tick', secondsLeft);
-      updateTimer();
-    }      
+    // Trigger tick event
+    timer.emit('tick', secondsLeft);
     
     // Only do this once
-    if(secondsLeft == 1 && arenaApp.timerPause === false){
-      setTimeout(function(){
-        player.play('./assets/air-horn.mp3');
-      }, 50)
-      
-    }
-
-    if(secondsLeft == 0 && arenaApp.timerPause === false){
+    if(secondsLeft === 0){
+      player.play('./assets/air-horn.mp3');     
+      stopTimer();
       setAppStateUI(appStates.MATCHFINISHED);
-      arenaApp.timerPause = true;
+      arenaApp.appState = appStates.MATCHFINISHED;
     }
 }
 
@@ -199,10 +222,6 @@ function setAppStateUI(state){ // expects an appState
   
   if(mainWindow !== null){
     app.setUiText(appStates.properties[state].name);
-    arenaApp.appState = state;
-
-    // Fire event indicating the state changed
-    stateChanged.emit('changed', state);
   
     switch(state) {
       case appStates.LOADIN:
@@ -244,14 +263,6 @@ app.adjustTimer = function(direction){ // Expects a positive or negative integer
   updateTimer();
 }
 
-function playCountdownToFight(){
-  arenaApp.playCountdown = true;
-  player.play('./assets/321-FIGHT.mp3');
-
-  setTimeout(function(){
-    arenaApp.playCountdown = false;
-  }, 4000);
-}
 
 //#endregion
 
@@ -271,23 +282,30 @@ app.reboot = function reboot(callback){
 
 //--- Start timer
 app.startTimer = function(){
-  playCountdownToFight();
-  setAppStateUI(appStates.MATCH);
-  arenaApp.timerPause = false;
+  startPressed();
 }
 
 //--- Pause timer
 app.pauseTimer = function(){
-  setAppStateUI(appStates.MATCHPAUSED);
-  arenaApp.timerPause = true;
+  pausePressed();
 }
 
 //--- Reset clock
 app.resetTimer = function(){
-  arenaApp.timerPause = true;
-  secondsLeft = startSeconds;
-  updateTimer();
-  setAppStateUI(appStates.LOADIN);
+  resetPressed();
+}
+
+//--- eStop
+app.eStop = function(){
+  eStopPressed();
+}
+
+app.setRedReady = function(){
+  redReadyPressed();
+}
+
+app.setBlueReady = function(){
+  blueReadyPressed();
 }
 
 // --- Sets the text displayed in the UI
@@ -299,32 +317,139 @@ app.getAppState = function(){
   return arenaApp.appState;
 };
 
-app.setRedReady = function(){
-  arenaApp.redReady = true;
-  if(debugMode) console.log("Red Ready!");
-}
 
-app.setBlueReady = function(){
-  arenaApp.blueReady = true;
-  if(debugMode) console.log("Blue Ready!");
-}
 
 //#endregion
 
 //#region Methods for playing sounds    ///////////////////////////////////////////////////////////////////////////////////
 
 function playBlueReady(){
-  player.play('./assets/blue.mp3');  
+  arenaApp.soundInProgress = true;
+  player.play('./assets/blue.mp3'); 
 }
 
-
 function playRedReady(){
+  arenaApp.soundInProgress = true;
   player.play('./assets/red.mp3');  
 }
 
-function playTapout(){
-  player.play('./assets/tapout-game.mp3');  
+function playCountdownToFight(){
+  arenaApp.playCountdown = true;
+  player.play('./assets/321-FIGHT.mp3');
 }
+
+function playTapout(){
+  arenaApp.soundInProgress = true;
+  player.play('./assets/tapout-game.mp3');
+}
+
+//#endregion
+
+//#region Button Event Handlers (shared with UI and hardware)    /////////////////////////////////////////////////////////
+
+function eStopPressed(){
+  debugLog("eStop pressed");
+
+  switch (arenaApp.appState){
+    case appStates.LOADIN:
+      // In load in, switch to prematch
+      setAppStateUI(appStates.PREMATCH);
+      PreMatch(); // GPIO related code during PreMatch State  
+      break;
+    
+    case appStates.MATCH:
+    case appStates.MATCHPAUSED:
+    case appStates.PREMATCH:
+      // In match, pause timer and set to loag in state
+      stopTimer();
+      setAppStateUI(appStates.LOADIN);
+      app.setUiText("EMERGENCY&nbsp; STOP&nbsp; ENGAGED") // Override the load in text in the UI
+      stopBlink(); // Stop any blinking intervals
+      arenaApp.blueReady = false;
+      arenaApp.redReady = false;
+      LoadIn(); // GPIO related code during LoadIn State  
+      break;
+  }
+}
+
+function startPressed(){
+  debugLog("Start pressed");
+  switch (arenaApp.appState){
+    case appStates.PREMATCH:
+    case appStates.MATCHPAUSED:
+
+    // If players ready, switch to match
+      if(arenaApp.blueReady && arenaApp.redReady){
+        arenaApp.startTimerAfterSound = true;
+        playCountdownToFight();
+        setAppStateUI(appStates.MATCH);
+        Match(); // GPIO related code during PreMatch State  
+      }
+      break;
+  }
+}
+
+function pausePressed(){
+  debugLog("Pause pressed");
+  
+  if(arenaApp.appState === appStates.MATCH){
+    arenaApp.appState = appStates.MATCHPAUSED;
+    setAppStateUI(appStates.MATCHPAUSED);
+    stopTimer();
+
+    // GPIO Related Code
+    LED_ALL_OFF();
+    Start_Button_LED.writeSync(0); // ON
+    Reset_Button_LED.writeSync(0); // ON
+    InMatch_LED.writeSync(0); // ON
+    Standby_LED.writeSync(0); // ON
+  }  
+}
+
+function resetPressed(){
+  debugLog("Reset pressed");
+
+  switch (arenaApp.appState){
+    case appStates.LOADIN:
+    case appStates.PREMATCH:
+    case appStates.MATCHPAUSED:
+    case appStates.MATCHFINISHED:
+      secondsLeft = startSeconds;
+      updateTimer();
+      setAppStateUI(appStates.LOADIN);
+      LoadIn(); // GPIO state
+      break;
+  }
+}
+
+function blueReadyPressed(){
+  debugLog("Blue Ready Pressed");
+  
+  switch (arenaApp.appState){
+    case appStates.PREMATCH:
+      playerReady(appPlayers.BLUE);
+      break;
+    case appStates.MATCH:
+      playerTapout(appPlayers.BLUE);
+      break;
+  }  
+}
+
+function redReadyPressed(){
+  debugLog("Red Ready Pressed");
+    
+  switch (arenaApp.appState){
+    case appStates.PREMATCH:
+      playerReady(appPlayers.RED);
+      break;
+    case appStates.MATCH:
+      playerTapout(appPlayers.RED);
+      break;
+  }
+}
+
+
+
 
 //#endregion
 
@@ -414,17 +539,7 @@ eStop_Button.watch((err, value) => {
   if (err) {
     throw err;
   }
-  app.pauseTimer();
-
-  app.setUiText('Emergency Stop Activated');
-
-  eStop_State = !eStop_State; //flip button state
-
-  if (eStop_State){
-    SystemState.State = SystemStates.LoadIn;    
-  } else {   
-    SystemState.State = SystemStates.PreMatch;    
-  }
+  eStopPressed();
 });
 
 Start_Button.watch((err, value) => {
@@ -432,11 +547,13 @@ Start_Button.watch((err, value) => {
     throw err;
   }
 
-  if (debugMode) {console.log("Start Pressed")};
+  startPressed();
 
-  Start_Button_LED.writeSync(Start_Button_LED.readSync() ^ 1);
-  InMatch_LED.writeSync(InMatch_LED.readSync() ^ 1);
-  app.startTimer();
+  // if (debugMode) {console.log("Start Pressed")};
+
+  // Start_Button_LED.writeSync(Start_Button_LED.readSync() ^ 1);
+  // InMatch_LED.writeSync(InMatch_LED.readSync() ^ 1);
+  // app.startTimer();
 });
 
 Pause_Button.watch((err, value) => {    
@@ -444,18 +561,14 @@ Pause_Button.watch((err, value) => {
     throw err;
   }
 
-  if (debugMode) {console.log("Pause Pressed")};
+  pausePressed();
+  // if (debugMode) {console.log("Pause Pressed")};
 
-  Pause_Button_LED.writeSync(Pause_Button_LED.readSync() ^ 1);
-  Standby_LED.writeSync(Standby_LED.readSync() ^ 1);    
-  app.pauseTimer();
+  // Pause_Button_LED.writeSync(Pause_Button_LED.readSync() ^ 1);
+  // Standby_LED.writeSync(Standby_LED.readSync() ^ 1);    
+  // app.pauseTimer();
   
-  // GPIO Related Code
-  LED_ALL_OFF();
-  Start_Button_LED.writeSync(0); // ON
-  Reset_Button_LED.writeSync(0); // ON
-  InMatch_LED.writeSync(0); // ON
-  Standby_LED.writeSync(0); // ON
+  
 });
 
 Reset_Button.watch((err, value) => {
@@ -463,39 +576,30 @@ Reset_Button.watch((err, value) => {
     throw err;
   }
   
-  if (debugMode) {console.log("Reset Pressed")};
-  Reset_Button_LED.writeSync(Reset_Button_LED.readSync() ^ 1);
-  WaitForReady_LED.writeSync(WaitForReady_LED.readSync() ^ 1);
-  app.resetTimer();
+  resetPressed();
+
+  // if (debugMode) {console.log("Reset Pressed")};
+  // Reset_Button_LED.writeSync(Reset_Button_LED.readSync() ^ 1);
+  // WaitForReady_LED.writeSync(WaitForReady_LED.readSync() ^ 1);
+  // app.resetTimer();
 });
 
 Blue_Ready_Button.watch((err, value) => {
   if (err) {
     throw err;
   }
-  
-  if (debugMode) {console.log("Blue Ready Button Pressed")};
-  
-  Remote_Blue_Ready_LED.writeSync(0);
-  
-  playBlueReady();
+  blueReadyPressed();
 })
 
 Red_Ready_Button.watch((err, value) => {
   if (err) {
     throw err;
   }
-  
-  if (debugMode) {console.log("Red Ready Button Pressed")};
-  Remote_Red_Ready_LED.writeSync(0);
-  
-  playRedReady();
+  redReadyPressed();
 })
 
 
 //#endregion
-
-
 
 
 // --- example of how to add a listner for when the timer ticks
@@ -504,123 +608,195 @@ timer.on('tick', function(e){
 });
 
 
-//--- Set the state of the app in the hardware
-stateChanged.on('changed', function setAppStateHardware(state){ // expects an appState
-
-    if(debugMode) console.log("Hardware state changed: " + appStates.properties[state].name);  
-  
-    switch(state) {
-      case appStates.LOADIN:
-        LoadIn(); // GPIO related code during LoadIn State
-        break;
-      case appStates.PREMATCH:
-        PreMatch(); // GPIO related code during PreMatch State
-        break;
-      case appStates.MATCH:
-        Match(); // GPIO related code during Match State
-        break;
-      case appStates.MATCHPAUSED:
-          
-          break;
-
-      case appStates.MATCHFINISHED:
-      
-          break;
-    }
-  
-});
-
+//#region GPIO state functions
 
 function LoadIn(){
-  //if (blinkInterval){clearInterval(blinkInterval)};
+  
+  // Set the app state
+  arenaApp.appState = appStates.LOADIN;
 
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
+  //SAFTEY_LIGHT_LOGIC
   //Safety Light = ON
   eStop_LED.writeSync(0); //ON
   Reset_Button_LED.writeSync(0); //ON
   Standby_LED.writeSync(0); //ON
+  
 }
 
 function PreMatch(){
+  
+  // Set the app state
+  arenaApp.appState = appStates.PREMATCH;
+  
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
+  //SAFTEY_LIGHT_LOGIC
   //Safety Light = OFF
+  Reset_Button_LED.writeSync(0); //ON
+  Standby_LED.writeSync(0); //ON
   WaitForReady_LED.writeSync(0); //ON
   
-  Blink_Ready(1);
+  // Create array of player ready leds
+  debugLog("All player ready leds blinking");
+  playerLeds = [MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Remote_Blue_Ready_LED,Remote_Red_Ready_LED];
+  startBlink(playerLeds);
+
 }
 
 function Match(){
+  
+  // Set the app state
+  arenaApp.appState = appStates.MATCH;
+
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
+  //SAFETY_LIGHT_LOGIC
+
+  MCP_Blue_Ready_LED.writeSync(0); //ON
+  MCP_Red_Ready_LED.writeSync(0); //ON
+  Remote_Blue_Ready_LED.writeSync(0); //ON
+  Remote_Red_Ready_LED.writeSync(0); //ON
   InMatch_LED.writeSync(0); //ON
   Pause_Button_LED.writeSync(0); // ON to indicate it is available to use
+  Standby_LED.writeSync(1); //OFF
+  WaitForReady_LED.writeSync(1); //OFF
+}
+
+// Sets the GPIO state for when a player is ready
+function playerReady(player){
+  debugLog("playerReady method called");
+
+  // Play sound
+  switch (player){
+    case appPlayers.BLUE:
+      if(arenaApp.blueReady === false){
+        debugLog("Playing blue ready sound");
+        playBlueReady();
+        arenaApp.blueReady = true;
+      }      
+      break;
+    case appPlayers.RED:
+      if(arenaApp.redReady === false){
+        debugLog("Playing red ready sound");
+        playRedReady();
+        arenaApp.redReady = true;
+      }      
+      break;
+  }
+
+  // Set interval to wait for the player ready sound to end
+  var soundInterval = setInterval(function(){
+    if(arenaApp.soundInProgress == false)
+      setPlayerGPIOs(soundInterval);
+  }, 200);
 
 }
 
-function msleep(n) {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n);
-}
-
-function sleep(n) {
-  msleep(n*1000);
-}
-
-
-var eStop_State = false; // initial value of eStop is OFF (safe)
-
-const SystemStates = {
-  LoadIn: 1,
-  PreMatch: 2,
-  Match: 3
-}
-
-function System() {
-  this.State = SystemStates.LoadIn;
-}
-
-const SystemState_Handler = {
-  set(obj, prop, value){
-    //console.log("Prop=" + prop + " Value=" + value);
-
-    if (prop === 'State'){
-      if (value === SystemStates.PreMatch){
-        console.log("Pre-Match State");
-        PreMatch();
+function setPlayerGPIOs(soundInterval){
   
-      } else if (value === SystemStates.PreMatch){
-        console.log("Match State");
-  
-      } else {
-        // SystemStates.LoadIn
-        console.log("Load In State");
-        LoadIn();
-      }
-    }    
+  // Clear interval that called this method.
+  clearInterval(soundInterval);
+
+  // Stop all blinking
+  stopBlink();  
+
+  // Determine if other player needs to continue to blink or go solid on
+  if(arenaApp.blueReady === false || arenaApp.redReady === false){
+    
+    playerLeds = [];
+    if(arenaApp.blueReady === false){
+      debugLog("Blue player blinking");
+      playerLeds.push(MCP_Blue_Ready_LED);
+      playerLeds.push(Remote_Blue_Ready_LED);
+    } else {
+      // Not blinking, turn on leds
+      debugLog("Blue player solid on");
+      MCP_Blue_Ready_LED.writeSync(0); //ON
+      Remote_Blue_Ready_LED.writeSync(0); //ON
+    }
+    if(arenaApp.redReady === false){
+      debugLog("Red player blinking");
+      playerLeds.push(MCP_Red_Ready_LED);
+      playerLeds.push(Remote_Red_Ready_LED);
+    } else {
+      // Not blinking, turn on leds
+      debugLog("Red player solid on");
+      MCP_Red_Ready_LED.writeSync(0); //ON
+      Remote_Red_Ready_LED.writeSync(0); //ON
+    }
+
+    // start blinking
+    setTimeout(() => {
+      debugLog("Player leds blinking");
+      startBlink(playerLeds);
+    }, 500); // Wait half second to start blinking
+
+  } else { // Both players ready, set GPIOs for fight mode
+    debugLog("Both players ready")
+    
+    app.setUiText("ROBOTS&nbsp; READY");
+
+    // Make sure both player ready leds are on
+    debugLog("All player ready leds on solid.")
+    MCP_Red_Ready_LED.writeSync(0); //ON
+    Remote_Red_Ready_LED.writeSync(0); //ON
+    MCP_Blue_Ready_LED.writeSync(0); //ON
+    Remote_Blue_Ready_LED.writeSync(0); //ON
+
+    // Wait for ready blink
+    
+    var wfrLed = [WaitForReady_LED];
+    setTimeout(() => {
+      debugLog("Wait for ready blinking");
+      startBlink(wfrLed);
+    }, 500); // Wait half second to start blinking
+
+    // Start button on
+    debugLog("Start button led on");
+    Start_Button_LED.writeSync(0); //ON
   }
 }
 
-const system = new System();
-const SystemState = new Proxy(system, SystemState_Handler);
+function playerTapout(player){
 
-////////////////////////////////////////////
-//setTimeout(endBlink, 5000); //stop blinking after 5 seconds
+  // Only allow tapout if in match
+  if(arenaApp.appState === appStates.MATCH){
+    // Pause the timer
+    stopTimer();
 
-function blinkLED(led) { //function to start blinking
-  if (led.readSync() === 0) { //check the pin state, if the state is 0 (or off)
-    led.writeSync(1); //set pin state to 1 (turn LED on)
+    // Play sound
+    playTapout();
 
-  } else {
-    led.writeSync(0); //set pin state to 0 (turn LED off)
+    // Update the UI
+    setAppStateUI(appStates.LOADIN);
+
+    // Update the ui text
+    app.setUiText(appPlayers.properties[player].name + " TAPPED&nbsp; OUT!")
+
+    // Set GPIO state
+    LoadIn();    
   }
 }
 
-function endBlink(led) { //function to stop blinking
-  clearInterval(blinkInterval); // Stop blink intervals
-  led.writeSync(1); // Turn LED off
-  //InMatch_LED.unexport(); // Unexport GPIO to free resources
-}
+//#endregion
+
+
+// function blinkLED(led) { //function to start blinking
+//   if (led.readSync() === 0) { //check the pin state, if the state is 0 (or off)
+//     led.writeSync(1); //set pin state to 1 (turn LED on)
+
+//   } else {
+//     led.writeSync(0); //set pin state to 0 (turn LED off)
+//   }
+// }
+
+// function endBlink(led) { //function to stop blinking
+//   clearInterval(blinkInterval); // Stop blink intervals
+//   led.writeSync(1); // Turn LED off
+//   //InMatch_LED.unexport(); // Unexport GPIO to free resources
+// }
 ////////////////////////////////////////////
 // MCP_Blue_Ready_LED.writeSync(0);
 // MCP_Red_Ready_LED.writeSync(0);
@@ -649,38 +825,58 @@ function Blink_Ready(leds){
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// --- Blink Function
+// --- Blink Functions
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function blinkLED(LEDS) { //function to start blinking
-  for (i=0;i<LEDS.length;i++){
-    LEDS[i].writeSync(LEDS[i].readSync() ^ 1);
-  }
-}
+//#region Blink functions
 
-function endBlink(LEDS) { //function to stop blinking
-  clearInterval(arenaApp.blinkInterval); // Stop blink intervals
-  for (i=0;i<LEDS.length;i++){
-    LEDS[i].writeSync(1);    
-  }  
+function startBlink(LEDS) {
+  arenaApp.blink = true;
+  debugLog("Starting Blink");
+  blinkInterval = setInterval(function(){
+    if (arenaApp.blink){
+      blinkLED(LEDS);
+    } else {
+      endBlink(blinkInterval, LEDS);
+    }
+  }, 500); 
 }
 
 function stopBlink(){
   arenaApp.blink = false;
 }
 
-function StartBlink(LEDS) {
-  arenaApp.blink = true;
-
-  arenaApp.blinkInterval = setInterval(function(){
-    if(debugMode){"Starting Blink"};
-
-    if (arenaApp.blink){
-      blinkLED(LEDS);
-    } else {
-      endBlink(LEDS);
-    }
-  }, 250); 
+// Toggle led state
+function blinkLED(LEDS) { 
+  for (i=0;i<LEDS.length;i++){
+    LEDS[i].writeSync(LEDS[i].readSync() ^ 1);
+  }
 }
+
+// Stop blinking
+function endBlink(blinkingInterval, LEDS) { 
+  debugLog("Stopping blinking");
+
+  // Stop blink interval
+  clearInterval(blinkingInterval); 
+
+  // Turn off specified leds
+  for (i=0;i<LEDS.length;i++){
+    LEDS[i].writeSync(1);    
+  }  
+}
+
+
+//#endregion
+
+
+//#region Misc methods
+
+function debugLog(msg){
+  if(debugMode) console.log(msg);
+}
+
+//#endregion
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- LED Initilization
