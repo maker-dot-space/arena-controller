@@ -14,9 +14,9 @@ let mainWindow
 function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    //kiosk: true,
-    width: 1500,
-    height: 900,
+    kiosk: true,
+    // width: 1500,
+    // height: 900,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true
@@ -72,25 +72,30 @@ app.on('activate', function () {
 
 //#region UI setup    ///////////////////////////////////////////////////////////////////////////////////
 
-//--- Set constants and variables.
+//--- Set audio player.
 var mpg = require('mpg123');
 var audioOutput = { name: 'bcm2835 ALSA', address: 'hw:CARD=ALSA,DEV=0' };
 var player = new mpg.MpgPlayer(audioOutput, true);
 player.on("end", function(){
   debugLog("sound stopped");
-  arenaApp.playCountdown = false;
+  if(arenaApp.startTimerAfterSound){
+    startTimer();
+    arenaApp.startTimerAfterSound = false;
+  }
+    
   arenaApp.soundInProgress = false;
 });
 // Test sound on load
 player.play('./assets/metronome.mp3');
 
+//--- Set included modules
 var eventEmitter = require('events').EventEmitter;
 var exec = require('child_process').exec;
 var timer = new eventEmitter.EventEmitter();
 
+//--- Set initial constants and variables
 var startSeconds = 120; // 3 minutes - Set Timer Length
-if (debugMode) { startSeconds=21}; // override time for debugging
-
+if (debugMode) startSeconds = 16; // override time for debugging
 var secondsLeft = startSeconds;
 
 const appStates = {
@@ -118,8 +123,7 @@ const appPlayers = {
 }
 
 var arenaApp = {
-  timerPause: true,
-  playCountdown: false,
+  startTimerAfterSound: false,
   appState: appStates.LOADIN,
   blink: false,
   blinkInterval: null,
@@ -141,37 +145,40 @@ function initializeArena(){
  
   // Set the initial time left
   updateTimer();
-
-  // Initialize the timer
-  initializeTimer();
 }
 
-//--- Initialize the timer intervals
-function initializeTimer(){
+
+function startTimer(){
+  debugLog("Timer started");
+  timerTick();
   arenaApp.timer = setInterval(function(){
     timerTick();
   }, 1000);
 }
 
+function stopTimer(){
+  clearInterval(arenaApp.timer);
+  debugLog("Timer stopped");
+}
+
 //--- Timer tick
 function timerTick(){
-  if(arenaApp.timerPause === false && arenaApp.playCountdown === false){
-      // Count down 1 second
-      secondsLeft--;
+  
+    // Count down 1 second
+    secondsLeft--;
+    
+    // Update timer
+    updateTimer();
 
-      // Trigger tick event
-      timer.emit('tick', secondsLeft);
-      updateTimer();
-    }      
+    // Trigger tick event
+    timer.emit('tick', secondsLeft);
     
     // Only do this once
-    if(secondsLeft == 0 && arenaApp.timerPause === false){
+    if(secondsLeft === 0){
       player.play('./assets/air-horn.mp3');     
-    }
-
-    if(secondsLeft == 0 && arenaApp.timerPause === false){
+      stopTimer();
       setAppStateUI(appStates.MATCHFINISHED);
-      arenaApp.timerPause = true;
+      arenaApp.appState = appStates.MATCHFINISHED;
     }
 }
 
@@ -256,10 +263,6 @@ app.adjustTimer = function(direction){ // Expects a positive or negative integer
   updateTimer();
 }
 
-function playCountdownToFight(){
-  arenaApp.playCountdown = true;
-  player.play('./assets/321-FIGHT.mp3');
-}
 
 //#endregion
 
@@ -330,6 +333,11 @@ function playRedReady(){
   player.play('./assets/red.mp3');  
 }
 
+function playCountdownToFight(){
+  arenaApp.playCountdown = true;
+  player.play('./assets/321-FIGHT.mp3');
+}
+
 function playTapout(){
   arenaApp.soundInProgress = true;
   player.play('./assets/tapout-game.mp3');
@@ -353,7 +361,7 @@ function eStopPressed(){
     case appStates.MATCHPAUSED:
     case appStates.PREMATCH:
       // In match, pause timer and set to loag in state
-      arenaApp.timerPause = true;
+      stopTimer();
       setAppStateUI(appStates.LOADIN);
       app.setUiText("EMERGENCY&nbsp; STOP&nbsp; ENGAGED") // Override the load in text in the UI
       stopBlink(); // Stop any blinking intervals
@@ -369,14 +377,12 @@ function startPressed(){
   switch (arenaApp.appState){
     case appStates.PREMATCH:
     case appStates.MATCHPAUSED:
-      // If players ready, switch to match
 
+    // If players ready, switch to match
       if(arenaApp.blueReady && arenaApp.redReady){
+        arenaApp.startTimerAfterSound = true;
         playCountdownToFight();
-        arenaApp.appState = appStates.MATCH;
-        arenaApp.timerPause = false;
         setAppStateUI(appStates.MATCH);
-        
         Match(); // GPIO related code during PreMatch State  
       }
       break;
@@ -389,7 +395,7 @@ function pausePressed(){
   if(arenaApp.appState === appStates.MATCH){
     arenaApp.appState = appStates.MATCHPAUSED;
     setAppStateUI(appStates.MATCHPAUSED);
-    arenaApp.timerPause = true;
+    stopTimer();
 
     // GPIO Related Code
     LED_ALL_OFF();
@@ -405,6 +411,7 @@ function resetPressed(){
 
   switch (arenaApp.appState){
     case appStates.LOADIN:
+    case appStates.PREMATCH:
     case appStates.MATCHPAUSED:
     case appStates.MATCHFINISHED:
       secondsLeft = startSeconds;
@@ -757,7 +764,7 @@ function playerTapout(player){
   // Only allow tapout if in match
   if(arenaApp.appState === appStates.MATCH){
     // Pause the timer
-    arenaApp.timerPause = true;
+    stopTimer();
 
     // Play sound
     playTapout();

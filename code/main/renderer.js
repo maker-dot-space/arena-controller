@@ -258,17 +258,17 @@ Mousetrap.bind('space', function() {
  });
 
 // --- Red Ready
-Mousetrap.bind('R', function() { 
+Mousetrap.bind('r', function() { 
     remote.app.setRedReady();
 });
 
 // --- Blue Ready
-Mousetrap.bind('B', function() { 
+Mousetrap.bind('b', function() { 
     remote.app.setBlueReady();
 });
 
 // --- Reset
-Mousetrap.bind('X', function() { 
+Mousetrap.bind('ctrl+x', function() { 
     resetTimer();
 });
 
