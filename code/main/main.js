@@ -78,6 +78,7 @@ var audioOutput = { name: 'bcm2835 ALSA', address: 'hw:CARD=ALSA,DEV=0' };
 var player = new mpg.MpgPlayer(audioOutput, true);
 player.on("end", function(){
   debugLog("sound stopped");
+  arenaApp.playCountdown = false;
   arenaApp.soundInProgress = false;
 });
 // Test sound on load
@@ -99,17 +100,21 @@ const appStates = {
   MATCHPAUSED: 4,
   MATCHFINISHED: 5,
   properties: {
-    1: {name: 'LOADING IN'},
-    2: {name: 'PRE MATCH - FIGHTERS GET READY'},
-    3: {name: 'MATCH IN PROGRESS'},
-    4: {name: 'MATCH PAUSED'},
-    5: {name: 'MATCH FINISHED'}
+    1: {name: 'LOADING&nbsp; IN'},
+    2: {name: 'PRE MATCH &nbsp; - &nbsp; ROBOTS&nbsp; GET&nbsp; READY!'},
+    3: {name: 'MATCH&nbsp; IN&nbsp; PROGRESS'},
+    4: {name: 'MATCH&nbsp; PAUSED'},
+    5: {name: 'MATCH&nbsp; FINISHED'}
   }
 }
 
 const appPlayers = {
-  RED: 1,
-  BLUE: 2
+  BLUE: 1,
+  RED: 2,
+  properties: {
+    1: {name: 'BLUE&nbsp; ROBOT&nbsp;'},
+    2: {name: 'RED&nbsp; ROBOT&nbsp;'}
+  }
 }
 
 var arenaApp = {
@@ -160,11 +165,8 @@ function timerTick(){
     }      
     
     // Only do this once
-    if(secondsLeft == 1 && arenaApp.timerPause === false){
-      setTimeout(function(){
-        player.play('./assets/air-horn.mp3');
-      }, 50)
-      
+    if(secondsLeft == 0 && arenaApp.timerPause === false){
+      player.play('./assets/air-horn.mp3');     
     }
 
     if(secondsLeft == 0 && arenaApp.timerPause === false){
@@ -257,10 +259,6 @@ app.adjustTimer = function(direction){ // Expects a positive or negative integer
 function playCountdownToFight(){
   arenaApp.playCountdown = true;
   player.play('./assets/321-FIGHT.mp3');
-
-  setTimeout(function(){
-    arenaApp.playCountdown = false;
-  }, 3000);
 }
 
 //#endregion
@@ -357,7 +355,7 @@ function eStopPressed(){
       // In match, pause timer and set to loag in state
       arenaApp.timerPause = true;
       setAppStateUI(appStates.LOADIN);
-      setUiText("EMERGENCY STOP ENGAGED") // Override the load in text in the UI
+      app.setUiText("EMERGENCY&nbsp; STOP&nbsp; ENGAGED") // Override the load in text in the UI
       stopBlink(); // Stop any blinking intervals
       arenaApp.blueReady = false;
       arenaApp.redReady = false;
@@ -368,12 +366,9 @@ function eStopPressed(){
 
 function startPressed(){
   debugLog("Start pressed");
-
-  debugLog(appStates.properties[arenaApp.appState].name);
-
   switch (arenaApp.appState){
     case appStates.PREMATCH:
-    //case appStates.MATCHPAUSED:
+    case appStates.MATCHPAUSED:
       // If players ready, switch to match
 
       if(arenaApp.blueReady && arenaApp.redReady){
@@ -386,38 +381,36 @@ function startPressed(){
       }
       break;
   }
-
-  // playCountdownToFight();
-  // setAppStateUI(appStates.MATCH);
-  // arenaApp.timerPause = false;
 }
 
 function pausePressed(){
   debugLog("Pause pressed");
   
-  // setAppStateUI(appStates.MATCHPAUSED);
-  // arenaApp.timerPause = true;
+  if(arenaApp.appState === appStates.MATCH){
+    arenaApp.appState = appStates.MATCHPAUSED;
+    setAppStateUI(appStates.MATCHPAUSED);
+    arenaApp.timerPause = true;
+
+    // GPIO Related Code
+    LED_ALL_OFF();
+    Start_Button_LED.writeSync(0); // ON
+    Reset_Button_LED.writeSync(0); // ON
+    InMatch_LED.writeSync(0); // ON
+    Standby_LED.writeSync(0); // ON
+  }  
 }
 
 function resetPressed(){
   debugLog("Reset pressed");
 
-  // arenaApp.timerPause = true;
-  // secondsLeft = startSeconds;
-  // updateTimer();
-  // setAppStateUI(appStates.LOADIN);
-}
-
-function redReadyPressed(){
-  debugLog("Red Ready Pressed");
-    
   switch (arenaApp.appState){
-    case appStates.PREMATCH:
-      arenaApp.redReady = true;
-      playerReady(appPlayers.RED);
-      break;
-    case appStates.MATCH:
-      playerTapout(appPlayers.RED);
+    case appStates.LOADIN:
+    case appStates.MATCHPAUSED:
+    case appStates.MATCHFINISHED:
+      secondsLeft = startSeconds;
+      updateTimer();
+      setAppStateUI(appStates.LOADIN);
+      LoadIn(); // GPIO state
       break;
   }
 }
@@ -427,7 +420,6 @@ function blueReadyPressed(){
   
   switch (arenaApp.appState){
     case appStates.PREMATCH:
-      arenaApp.blueReady = true;
       playerReady(appPlayers.BLUE);
       break;
     case appStates.MATCH:
@@ -435,6 +427,21 @@ function blueReadyPressed(){
       break;
   }  
 }
+
+function redReadyPressed(){
+  debugLog("Red Ready Pressed");
+    
+  switch (arenaApp.appState){
+    case appStates.PREMATCH:
+      playerReady(appPlayers.RED);
+      break;
+    case appStates.MATCH:
+      playerTapout(appPlayers.RED);
+      break;
+  }
+}
+
+
 
 
 //#endregion
@@ -547,18 +554,14 @@ Pause_Button.watch((err, value) => {
     throw err;
   }
 
-  if (debugMode) {console.log("Pause Pressed")};
+  pausePressed();
+  // if (debugMode) {console.log("Pause Pressed")};
 
-  Pause_Button_LED.writeSync(Pause_Button_LED.readSync() ^ 1);
-  Standby_LED.writeSync(Standby_LED.readSync() ^ 1);    
-  app.pauseTimer();
+  // Pause_Button_LED.writeSync(Pause_Button_LED.readSync() ^ 1);
+  // Standby_LED.writeSync(Standby_LED.readSync() ^ 1);    
+  // app.pauseTimer();
   
-  // GPIO Related Code
-  LED_ALL_OFF();
-  Start_Button_LED.writeSync(0); // ON
-  Reset_Button_LED.writeSync(0); // ON
-  InMatch_LED.writeSync(0); // ON
-  Standby_LED.writeSync(0); // ON
+  
 });
 
 Reset_Button.watch((err, value) => {
@@ -566,10 +569,12 @@ Reset_Button.watch((err, value) => {
     throw err;
   }
   
-  if (debugMode) {console.log("Reset Pressed")};
-  Reset_Button_LED.writeSync(Reset_Button_LED.readSync() ^ 1);
-  WaitForReady_LED.writeSync(WaitForReady_LED.readSync() ^ 1);
-  app.resetTimer();
+  resetPressed();
+
+  // if (debugMode) {console.log("Reset Pressed")};
+  // Reset_Button_LED.writeSync(Reset_Button_LED.readSync() ^ 1);
+  // WaitForReady_LED.writeSync(WaitForReady_LED.readSync() ^ 1);
+  // app.resetTimer();
 });
 
 Blue_Ready_Button.watch((err, value) => {
@@ -641,6 +646,11 @@ function Match(){
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
   //SAFETY_LIGHT_LOGIC
+
+  MCP_Blue_Ready_LED.writeSync(0); //ON
+  MCP_Red_Ready_LED.writeSync(0); //ON
+  Remote_Blue_Ready_LED.writeSync(0); //ON
+  Remote_Red_Ready_LED.writeSync(0); //ON
   InMatch_LED.writeSync(0); //ON
   Pause_Button_LED.writeSync(0); // ON to indicate it is available to use
   Standby_LED.writeSync(1); //OFF
@@ -654,12 +664,18 @@ function playerReady(player){
   // Play sound
   switch (player){
     case appPlayers.BLUE:
-      debugLog("Playing blue ready sound");
-      playBlueReady();
+      if(arenaApp.blueReady === false){
+        debugLog("Playing blue ready sound");
+        playBlueReady();
+        arenaApp.blueReady = true;
+      }      
       break;
     case appPlayers.RED:
-      debugLog("Playing red ready sound");
-      playRedReady();
+      if(arenaApp.redReady === false){
+        debugLog("Playing red ready sound");
+        playRedReady();
+        arenaApp.redReady = true;
+      }      
       break;
   }
 
@@ -667,7 +683,7 @@ function playerReady(player){
   var soundInterval = setInterval(function(){
     if(arenaApp.soundInProgress == false)
       setPlayerGPIOs(soundInterval);
-  }, 500);
+  }, 200);
 
 }
 
@@ -708,12 +724,12 @@ function setPlayerGPIOs(soundInterval){
     setTimeout(() => {
       debugLog("Player leds blinking");
       startBlink(playerLeds);
-    }, 1000); // Wait one second to start blinking
+    }, 500); // Wait half second to start blinking
 
   } else { // Both players ready, set GPIOs for fight mode
     debugLog("Both players ready")
     
-    app.setUiText("ROBOTS READY");
+    app.setUiText("ROBOTS&nbsp; READY");
 
     // Make sure both player ready leds are on
     debugLog("All player ready leds on solid.")
@@ -728,7 +744,7 @@ function setPlayerGPIOs(soundInterval){
     setTimeout(() => {
       debugLog("Wait for ready blinking");
       startBlink(wfrLed);
-    }, 1000); // Wait one second to start blinking
+    }, 500); // Wait half second to start blinking
 
     // Start button on
     debugLog("Start button led on");
@@ -738,10 +754,23 @@ function setPlayerGPIOs(soundInterval){
 
 function playerTapout(player){
 
-  // Pause the timer
-  app.pauseTimer();
+  // Only allow tapout if in match
+  if(arenaApp.appState === appStates.MATCH){
+    // Pause the timer
+    arenaApp.timerPause = true;
 
+    // Play sound
+    playTapout();
 
+    // Update the UI
+    setAppStateUI(appStates.LOADIN);
+
+    // Update the ui text
+    app.setUiText(appPlayers.properties[player].name + " TAPPED&nbsp; OUT!")
+
+    // Set GPIO state
+    LoadIn();    
+  }
 }
 
 //#endregion
