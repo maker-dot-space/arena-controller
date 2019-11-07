@@ -359,6 +359,11 @@ function eStopPressed(){
     case appStates.LOADIN:
       // In load in, switch to prematch
       setAppStateUI(appStates.PREMATCH);
+
+      // Make sure the timer is restarted
+      secondsLeft = startSeconds;
+      updateTimer();
+
       PreMatch(); // GPIO related code during PreMatch State  
       break;
     
