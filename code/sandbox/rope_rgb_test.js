@@ -24,7 +24,7 @@ var arenaApp = {
 
 //var blinkInterval = setInterval(blinkLED, 250); //run the blinkLED function every 250ms
 arenaApp.blink = true;
-StartBlink([rgb_Green_LED,WaitForReady_LED]);
+StartBlink([rgb_Red_LED,rgb_Green_LED,rgb_Blue_LED,WaitForReady_LED]);
 
 function blinkLED(LEDS) { //function to start blinking
   for (i=0;i<LEDS.length;i++){
@@ -47,8 +47,8 @@ function StartBlink(LEDS) {
     } else {
       endBlink(LEDS);
     }
-  }, 500); 
+  }, 1000); 
 }
 
 // setTimeout used to SIMULATING A BUTTON CLICK
-setTimeout(function(){arenaApp.blink=false}, 10000); //stop blinking after 5 seconds
+setTimeout(function(){arenaApp.blink=false}, 20000); //stop blinking after 5 seconds

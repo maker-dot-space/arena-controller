@@ -1,12 +1,10 @@
-const Gpio = require('onoff').Gpio;
-var { Timer } = require('easytimer.js');
-var timerInstance = new Timer();
+var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
 
-const Start_Button = new Gpio(17, 'in', 'rising', {debounceTimeout: 100});
-const Pause_Button = new Gpio(12, 'in', 'rising', {debounceTimeout: 100});
-const Reset_Button = new Gpio(27, 'in', 'rising', {debounceTimeout: 100});
-const eStop_Button = new Gpio(22, 'in', 'rising', {debounceTimeout: 100});
-const Blue_Ready_Button = new Gpio(23, 'in','rising', {debounceTimeout: 100});
+const Start_Button = new Gpio(17, 'in', 'falling', {debounceTimeout: 100});
+const Pause_Button = new Gpio(12, 'in', 'falling', {debounceTimeout: 100});
+const Reset_Button = new Gpio(27, 'in', 'falling', {debounceTimeout: 100});
+const eStop_Button = new Gpio(22, 'in', 'falling', {debounceTimeout: 100});
+const Blue_Ready_Button = new Gpio(23, 'in', 'rising', {debounceTimeout: 100});
 const Red_Ready_Button = new Gpio(24, 'in', 'rising', {debounceTimeout: 100});
 
 const MCP_Blue_Ready_LED = new Gpio(25, 'high'), //use declare variables for all the GPIO output pins
@@ -22,7 +20,7 @@ const MCP_Blue_Ready_LED = new Gpio(25, 'high'), //use declare variables for all
   WaitForReady_LED = new Gpio(11, 'high');
 
 //Put all the LED variables in an array
-var leds = [Remote_Blue_Ready_LED,MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Remote_Red_Ready_LED,Start_Button_LED,Pause_Button_LED,Reset_Button_LED,InMatch_LED,eStop_LED,Standby_LED,WaitForReady_LED];
+var leds = [MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Start_Button_LED,Pause_Button_LED,Reset_Button_LED,InMatch_LED,eStop_LED,Standby_LED,WaitForReady_LED,Remote_Blue_Ready_LED,Remote_Red_Ready_LED];
 
 function LED_ALL_OFF(){
   leds.forEach(function(currentValue) { //for each item in array
@@ -74,8 +72,7 @@ Blue_Ready_Button.watch((err, value) => {
   console.log("Blue Ready Pressed");
   
   MCP_Blue_Ready_LED.writeSync(MCP_Blue_Ready_LED.readSync() ^ 1);
-  //Remote_Blue_Ready_LED.writeSync(0);
-  //Remote_Blue_Ready_LED.writeSync(Remote_Blue_Ready_LED.readSync() ^ 1);
+  Remote_Blue_Ready_LED.writeSync(Remote_Blue_Ready_LED.readSync() ^ 1);
 
 });
 
@@ -86,7 +83,7 @@ Red_Ready_Button.watch((err, value) => {
   console.log("Red Ready Pressed");
   
   MCP_Red_Ready_LED.writeSync(MCP_Red_Ready_LED.readSync() ^ 1);
-  //Remote_Red_Ready_LED.writeSync(Remote_Red_Ready_LED.readSync() ^ 1);
+  Remote_Red_Ready_LED.writeSync(Remote_Red_Ready_LED.readSync() ^ 1);
 }); 
 
 Start_Button.watch((err, value) => {
