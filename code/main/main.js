@@ -688,18 +688,20 @@ function playerReady(player){
       break;
   }
 
-  // Set interval to wait for the player ready sound to end
-  var soundInterval = setInterval(function(){
-    if(arenaApp.soundInProgress == false)
-      setPlayerGPIOs(soundInterval);
-  }, 200);
+  // // Set interval to wait for the player ready sound to end
+  // var soundInterval = setInterval(function(){
+  //   if(arenaApp.soundInProgress == false)
+  //     setPlayerGPIOs(soundInterval);
+  // }, 200);
+
+  setPlayerGPIOs();
 
 }
 
 function setPlayerGPIOs(soundInterval){
   
-  // Clear interval that called this method.
-  clearInterval(soundInterval);
+  // // Clear interval that called this method.
+  // clearInterval(soundInterval);
 
   // Stop all blinking
   stopBlink();  
