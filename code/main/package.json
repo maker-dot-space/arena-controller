@@ -17,7 +17,7 @@
   "dependencies": {
     "epoll": "^3.0.0",
     "mousetrap": "^1.6.3",
-    "node-omxplayer": "^0.6.1",
+    "mpg123": "github:Pecacheu/mpg123",
     "onoff": "^5.0.0"
   }
 }

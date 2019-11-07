@@ -73,12 +73,16 @@ app.on('activate', function () {
 //#region UI setup    ///////////////////////////////////////////////////////////////////////////////////
 
 //--- Set constants and variables.
-var omx = require('node-omxplayer');
-var player = omx('./assets/metronome.mp3');
-player.on("close", function(){
+var mpg = require('mpg123');
+var audioOutput = { name: 'bcm2835 ALSA', address: 'hw:CARD=ALSA,DEV=0' };
+var player = new mpg.MpgPlayer(audioOutput, true);
+player.on("end", function(){
   debugLog("sound stopped");
   arenaApp.soundInProgress = false;
 });
+// Test sound on load
+player.play('./assets/metronome.mp3');
+
 var eventEmitter = require('events').EventEmitter;
 var exec = require('child_process').exec;
 var timer = new eventEmitter.EventEmitter();
@@ -256,7 +260,7 @@ function playCountdownToFight(){
 
   setTimeout(function(){
     arenaApp.playCountdown = false;
-  }, 4000);
+  }, 3000);
 }
 
 //#endregion
@@ -320,17 +324,17 @@ app.getAppState = function(){
 
 function playBlueReady(){
   arenaApp.soundInProgress = true;
-  player.newSource('./assets/blue.mp3'); 
+  player.play('./assets/blue.mp3'); 
 }
 
 function playRedReady(){
   arenaApp.soundInProgress = true;
-  player.newSource('./assets/red.mp3');  
+  player.play('./assets/red.mp3');  
 }
 
 function playTapout(){
   arenaApp.soundInProgress = true;
-  player.newSource('./assets/tapout-game.mp3');
+  player.play('./assets/tapout-game.mp3');
 }
 
 //#endregion
@@ -348,9 +352,10 @@ function eStopPressed(){
       break;
     
     case appStates.MATCH:
+    case appStates.MATCHPAUSED:
     case appStates.PREMATCH:
       // In match, pause timer and set to loag in state
-      app.pauseTimer();
+      arenaApp.timerPause = true;
       setAppStateUI(appStates.LOADIN);
       setUiText("EMERGENCY STOP ENGAGED") // Override the load in text in the UI
       stopBlink(); // Stop any blinking intervals
@@ -363,6 +368,24 @@ function eStopPressed(){
 
 function startPressed(){
   debugLog("Start pressed");
+
+  debugLog(appStates.properties[arenaApp.appState].name);
+
+  switch (arenaApp.appState){
+    case appStates.PREMATCH:
+    //case appStates.MATCHPAUSED:
+      // If players ready, switch to match
+
+      if(arenaApp.blueReady && arenaApp.redReady){
+        playCountdownToFight();
+        arenaApp.appState = appStates.MATCH;
+        arenaApp.timerPause = false;
+        setAppStateUI(appStates.MATCH);
+        
+        Match(); // GPIO related code during PreMatch State  
+      }
+      break;
+  }
 
   // playCountdownToFight();
   // setAppStateUI(appStates.MATCH);
@@ -510,11 +533,13 @@ Start_Button.watch((err, value) => {
     throw err;
   }
 
-  if (debugMode) {console.log("Start Pressed")};
+  startPressed();
 
-  Start_Button_LED.writeSync(Start_Button_LED.readSync() ^ 1);
-  InMatch_LED.writeSync(InMatch_LED.readSync() ^ 1);
-  app.startTimer();
+  // if (debugMode) {console.log("Start Pressed")};
+
+  // Start_Button_LED.writeSync(Start_Button_LED.readSync() ^ 1);
+  // InMatch_LED.writeSync(InMatch_LED.readSync() ^ 1);
+  // app.startTimer();
 });
 
 Pause_Button.watch((err, value) => {    
@@ -609,11 +634,17 @@ function PreMatch(){
 }
 
 function Match(){
+  
+  // Set the app state
+  arenaApp.appState = appStates.MATCH;
+
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
+  //SAFETY_LIGHT_LOGIC
   InMatch_LED.writeSync(0); //ON
   Pause_Button_LED.writeSync(0); // ON to indicate it is available to use
-
+  Standby_LED.writeSync(1); //OFF
+  WaitForReady_LED.writeSync(1); //OFF
 }
 
 // Sets the GPIO state for when a player is ready
