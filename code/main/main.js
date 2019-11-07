@@ -77,10 +77,8 @@ var player = require('play-sound')(opts = {});
 var eventEmitter = require('events').EventEmitter;
 var exec = require('child_process').exec;
 var timer = new eventEmitter.EventEmitter();
-var stateChanged = new eventEmitter.EventEmitter();
 
 var startSeconds = 120; // 3 minutes - Set Timer Length
-
 if (debugMode) { startSeconds=21}; // override time for debugging
 
 var secondsLeft = startSeconds;
@@ -93,7 +91,7 @@ const appStates = {
   MATCHFINISHED: 5,
   properties: {
     1: {name: 'LOADING IN'},
-    2: {name: 'PRE MATCH'},
+    2: {name: 'PRE MATCH - FIGHTERS GET READY'},
     3: {name: 'MATCH IN PROGRESS'},
     4: {name: 'MATCH PAUSED'},
     5: {name: 'MATCH FINISHED'}
@@ -114,17 +112,19 @@ var arenaApp = {
 function initializeArena(){
 
   // Set the current state
+  arenaApp.appState = appStates.LOADIN;
+  
+  // Update the UI
   setAppStateUI(appStates.LOADIN);
+  
+  // Update the GPIOs
+  LoadIn();
  
   // Set the initial time left
   updateTimer();
 
   // Initialize the timer
   initializeTimer();
-
-  // TEMP testing starting the timer
-  //setTimeout(startTimer, 2000);
-
 }
 
 //--- Initialize the timer intervals
@@ -199,10 +199,6 @@ function setAppStateUI(state){ // expects an appState
   
   if(mainWindow !== null){
     app.setUiText(appStates.properties[state].name);
-    arenaApp.appState = state;
-
-    // Fire event indicating the state changed
-    stateChanged.emit('changed', state);
   
     switch(state) {
       case appStates.LOADIN:
@@ -271,23 +267,30 @@ app.reboot = function reboot(callback){
 
 //--- Start timer
 app.startTimer = function(){
-  playCountdownToFight();
-  setAppStateUI(appStates.MATCH);
-  arenaApp.timerPause = false;
+  startPressed();
 }
 
 //--- Pause timer
 app.pauseTimer = function(){
-  setAppStateUI(appStates.MATCHPAUSED);
-  arenaApp.timerPause = true;
+  pausePressed();
 }
 
 //--- Reset clock
 app.resetTimer = function(){
-  arenaApp.timerPause = true;
-  secondsLeft = startSeconds;
-  updateTimer();
-  setAppStateUI(appStates.LOADIN);
+  resetPressed();
+}
+
+//--- eStop
+app.eStop = function(){
+  eStopPressed();
+}
+
+app.setRedReady = function(){
+  redReadyPressed();
+}
+
+app.setBlueReady = function(){
+  blueReadyPressed();
 }
 
 // --- Sets the text displayed in the UI
@@ -299,15 +302,7 @@ app.getAppState = function(){
   return arenaApp.appState;
 };
 
-app.setRedReady = function(){
-  arenaApp.redReady = true;
-  if(debugMode) console.log("Red Ready!");
-}
 
-app.setBlueReady = function(){
-  arenaApp.blueReady = true;
-  if(debugMode) console.log("Blue Ready!");
-}
 
 //#endregion
 
@@ -325,6 +320,69 @@ function playRedReady(){
 function playTapout(){
   player.play('./assets/tapout-game.mp3');  
 }
+
+//#endregion
+
+//#region Button Event Handlers (shared with UI and hardware)    /////////////////////////////////////////////////////////
+
+function eStopPressed(){
+  if(debugMode) console.log("eStop pressed");
+
+  switch (arenaApp.appState){
+    case appStates.LOADIN:
+      // In load in, switch to prematch
+      setAppStateUI(appStates.PREMATCH);
+      PreMatch(); // GPIO related code during PreMatch State  
+      break;
+    
+    case appStates.MATCH:
+    case appStates.PREMATCH:
+      // In match, pause timer and set to loag in state
+      app.pauseTimer();
+      setAppStateUI(appStates.LOADIN);
+      setUiText("EMERGENCY STOP ENGAGED") // Override the load in text in the UI
+      LoadIn(); // GPIO related code during LoadIn State  
+      break;
+  }
+}
+
+function startPressed(){
+  if(debugMode) console.log("Start pressed");
+
+  playCountdownToFight();
+  setAppStateUI(appStates.MATCH);
+  arenaApp.timerPause = false;
+}
+
+function pausePressed(){
+  if(debugMode) console.log("Pause pressed");
+  
+  setAppStateUI(appStates.MATCHPAUSED);
+  arenaApp.timerPause = true;
+}
+
+function resetPressed(){
+  if(debugMode) console.log("Reset pressed");
+
+  arenaApp.timerPause = true;
+  secondsLeft = startSeconds;
+  updateTimer();
+  setAppStateUI(appStates.LOADIN);
+}
+
+function redReadyPressed(){
+  if(debugMode) console.log("Red Ready!");
+  
+  arenaApp.redReady = true;
+  
+}
+
+function blueReadyPressed(){
+  if(debugMode) console.log("Blue Ready!");
+  
+  arenaApp.blueReady = true;  
+}
+
 
 //#endregion
 
@@ -414,17 +472,7 @@ eStop_Button.watch((err, value) => {
   if (err) {
     throw err;
   }
-  app.pauseTimer();
-
-  app.setUiText('Emergency Stop Activated');
-
-  eStop_State = !eStop_State; //flip button state
-
-  if (eStop_State){
-    SystemState.State = SystemStates.LoadIn;    
-  } else {   
-    SystemState.State = SystemStates.PreMatch;    
-  }
+  eStopPressed();
 });
 
 Start_Button.watch((err, value) => {
@@ -504,51 +552,36 @@ timer.on('tick', function(e){
 });
 
 
-//--- Set the state of the app in the hardware
-stateChanged.on('changed', function setAppStateHardware(state){ // expects an appState
 
-    if(debugMode) console.log("Hardware state changed: " + appStates.properties[state].name);  
-  
-    switch(state) {
-      case appStates.LOADIN:
-        LoadIn(); // GPIO related code during LoadIn State
-        break;
-      case appStates.PREMATCH:
-        PreMatch(); // GPIO related code during PreMatch State
-        break;
-      case appStates.MATCH:
-        Match(); // GPIO related code during Match State
-        break;
-      case appStates.MATCHPAUSED:
-          
-          break;
 
-      case appStates.MATCHFINISHED:
-      
-          break;
-    }
-  
-});
 
+//#region GPIO initial states
 
 function LoadIn(){
-  //if (blinkInterval){clearInterval(blinkInterval)};
-
+  
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
+  //SAFTEY_LIGHT_LOGIC
   //Safety Light = ON
   eStop_LED.writeSync(0); //ON
   Reset_Button_LED.writeSync(0); //ON
   Standby_LED.writeSync(0); //ON
+  
 }
 
 function PreMatch(){
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
+  //SAFTEY_LIGHT_LOGIC
   //Safety Light = OFF
+  Reset_Button_LED.writeSync(0); //ON
+  Standby_LED.writeSync(0); //ON
   WaitForReady_LED.writeSync(0); //ON
   
-  Blink_Ready(1);
+  // Create array of player ready leds
+  arenaApp.playerReadyLeds = [];
+
+  //Blink_Ready(1);
 }
 
 function Match(){
@@ -559,68 +592,23 @@ function Match(){
 
 }
 
-function msleep(n) {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n);
-}
-
-function sleep(n) {
-  msleep(n*1000);
-}
+//#endregion
 
 
-var eStop_State = false; // initial value of eStop is OFF (safe)
+// function blinkLED(led) { //function to start blinking
+//   if (led.readSync() === 0) { //check the pin state, if the state is 0 (or off)
+//     led.writeSync(1); //set pin state to 1 (turn LED on)
 
-const SystemStates = {
-  LoadIn: 1,
-  PreMatch: 2,
-  Match: 3
-}
+//   } else {
+//     led.writeSync(0); //set pin state to 0 (turn LED off)
+//   }
+// }
 
-function System() {
-  this.State = SystemStates.LoadIn;
-}
-
-const SystemState_Handler = {
-  set(obj, prop, value){
-    //console.log("Prop=" + prop + " Value=" + value);
-
-    if (prop === 'State'){
-      if (value === SystemStates.PreMatch){
-        console.log("Pre-Match State");
-        PreMatch();
-  
-      } else if (value === SystemStates.PreMatch){
-        console.log("Match State");
-  
-      } else {
-        // SystemStates.LoadIn
-        console.log("Load In State");
-        LoadIn();
-      }
-    }    
-  }
-}
-
-const system = new System();
-const SystemState = new Proxy(system, SystemState_Handler);
-
-////////////////////////////////////////////
-//setTimeout(endBlink, 5000); //stop blinking after 5 seconds
-
-function blinkLED(led) { //function to start blinking
-  if (led.readSync() === 0) { //check the pin state, if the state is 0 (or off)
-    led.writeSync(1); //set pin state to 1 (turn LED on)
-
-  } else {
-    led.writeSync(0); //set pin state to 0 (turn LED off)
-  }
-}
-
-function endBlink(led) { //function to stop blinking
-  clearInterval(blinkInterval); // Stop blink intervals
-  led.writeSync(1); // Turn LED off
-  //InMatch_LED.unexport(); // Unexport GPIO to free resources
-}
+// function endBlink(led) { //function to stop blinking
+//   clearInterval(blinkInterval); // Stop blink intervals
+//   led.writeSync(1); // Turn LED off
+//   //InMatch_LED.unexport(); // Unexport GPIO to free resources
+// }
 ////////////////////////////////////////////
 // MCP_Blue_Ready_LED.writeSync(0);
 // MCP_Red_Ready_LED.writeSync(0);
@@ -649,30 +637,15 @@ function Blink_Ready(leds){
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// --- Blink Function
+// --- Blink Functions
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function blinkLED(LEDS) { //function to start blinking
-  for (i=0;i<LEDS.length;i++){
-    LEDS[i].writeSync(LEDS[i].readSync() ^ 1);
-  }
-}
+//#region Blink functions
 
-function endBlink(LEDS) { //function to stop blinking
-  clearInterval(arenaApp.blinkInterval); // Stop blink intervals
-  for (i=0;i<LEDS.length;i++){
-    LEDS[i].writeSync(1);    
-  }  
-}
-
-function stopBlink(){
-  arenaApp.blink = false;
-}
-
-function StartBlink(LEDS) {
+function startBlink(LEDS) {
   arenaApp.blink = true;
 
   arenaApp.blinkInterval = setInterval(function(){
-    if(debugMode){"Starting Blink"};
+    if(debugMode) console.log("Starting Blink");
 
     if (arenaApp.blink){
       blinkLED(LEDS);
@@ -681,6 +654,34 @@ function StartBlink(LEDS) {
     }
   }, 250); 
 }
+
+function stopBlink(){
+  arenaApp.blink = false;
+}
+
+// Toggle led state
+function blinkLED(LEDS) { 
+  for (i=0;i<LEDS.length;i++){
+    LEDS[i].writeSync(LEDS[i].readSync() ^ 1);
+  }
+}
+
+// Stop blinking
+function endBlink(LEDS) { 
+  // Stop blink interval
+  clearInterval(arenaApp.blinkInterval); 
+
+  // Turn off specified leds
+  for (i=0;i<LEDS.length;i++){
+    LEDS[i].writeSync(1);    
+  }  
+}
+
+
+
+
+
+//#endregion
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- LED Initilization

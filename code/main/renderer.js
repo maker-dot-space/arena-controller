@@ -94,6 +94,10 @@ function enableStateControls(){
     $("#stateReset").on("click", function(){
         resetTimer();
     });
+
+    $("#stateStop").on("click", function(){
+        eStop();
+    });
 }
 
 
@@ -234,6 +238,10 @@ function resetTimer(){
     remote.app.resetTimer();
 }
 
+function eStop(){
+    remote.app.eStop();
+}
+
 
 // --- Keyboard shortcuts -------------------------------------------------------------------
 
@@ -262,6 +270,11 @@ Mousetrap.bind('B', function() {
 // --- Reset
 Mousetrap.bind('X', function() { 
     resetTimer();
+});
+
+// --- eStop
+Mousetrap.bind('ctrl+s', function() { 
+    eStop();
 });
 
 // --- Shutdown
