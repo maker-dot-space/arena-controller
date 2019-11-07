@@ -654,13 +654,15 @@ function Match(){
 
   //SAFETY_LIGHT_LOGIC
 
+  stopBlink();
+
   MCP_Blue_Ready_LED.writeSync(0); //ON
   MCP_Red_Ready_LED.writeSync(0); //ON
   Remote_Blue_Ready_LED.writeSync(0); //ON
   Remote_Red_Ready_LED.writeSync(0); //ON
   InMatch_LED.writeSync(0); //ON
   Pause_Button_LED.writeSync(0); // ON to indicate it is available to use
-  Standby_LED.writeSync(1); //OFF
+  Standby_LED.writeSync(1); //OFF 
   WaitForReady_LED.writeSync(1); //OFF
 }
 
