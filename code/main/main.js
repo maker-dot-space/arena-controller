@@ -180,6 +180,10 @@ function timerTick(){
       stopTimer();
       setAppStateUI(appStates.MATCHFINISHED);
       arenaApp.appState = appStates.MATCHFINISHED;
+      LED_ALL_OFF();
+      Standby_LED.writeSync(0); //ON
+      arenaApp.blinkingLeds = [eStop_LED];
+      startBlink(arenaApp.blinkingLeds);
     }
 }
 
@@ -365,6 +369,15 @@ function eStopPressed(){
       stopTimer();
       setAppStateUI(appStates.LOADIN);
       app.setUiText("EMERGENCY&nbsp; STOP&nbsp; ENGAGED") // Override the load in text in the UI
+      stopBlink(); // Stop any blinking intervals
+      arenaApp.blueReady = false;
+      arenaApp.redReady = false;
+      LoadIn(); // GPIO related code during LoadIn State  
+      break;
+    case appStates.MATCHFINISHED:
+      // In match, pause timer and set to loag in state
+      stopTimer();
+      setAppStateUI(appStates.LOADIN);
       stopBlink(); // Stop any blinking intervals
       arenaApp.blueReady = false;
       arenaApp.redReady = false;
