@@ -14,9 +14,9 @@ let mainWindow
 function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    kiosk: true,
-    //width: 1500,
-    //height: 900,
+    //kiosk: true,
+    width: 1500,
+    height: 900,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true
@@ -96,6 +96,11 @@ const appStates = {
     4: {name: 'MATCH PAUSED'},
     5: {name: 'MATCH FINISHED'}
   }
+}
+
+const appPlayers = {
+  RED: 1,
+  BLUE: 2
 }
 
 var arenaApp = {
@@ -309,12 +314,15 @@ app.getAppState = function(){
 //#region Methods for playing sounds    ///////////////////////////////////////////////////////////////////////////////////
 
 function playBlueReady(){
-  player.play('./assets/blue.mp3');  
+  arenaApp.playerSoundInProgress = true;
+  player.play('./assets/blue.mp3');
+  arenaApp.playerSoundInProgress = false;
 }
 
-
 function playRedReady(){
+  arenaApp.playerSoundInProgress = true;
   player.play('./assets/red.mp3');  
+  arenaApp.playerSoundInProgress = false;
 }
 
 function playTapout(){
@@ -326,7 +334,7 @@ function playTapout(){
 //#region Button Event Handlers (shared with UI and hardware)    /////////////////////////////////////////////////////////
 
 function eStopPressed(){
-  if(debugMode) console.log("eStop pressed");
+  debugLog("eStop pressed");
 
   switch (arenaApp.appState){
     case appStates.LOADIN:
@@ -341,46 +349,64 @@ function eStopPressed(){
       app.pauseTimer();
       setAppStateUI(appStates.LOADIN);
       setUiText("EMERGENCY STOP ENGAGED") // Override the load in text in the UI
+      stopBlink(); // Stop any blinking intervals
+      arenaApp.blueReady = false;
+      arenaApp.redReady = false;
       LoadIn(); // GPIO related code during LoadIn State  
       break;
   }
 }
 
 function startPressed(){
-  if(debugMode) console.log("Start pressed");
+  debugLog("Start pressed");
 
-  playCountdownToFight();
-  setAppStateUI(appStates.MATCH);
-  arenaApp.timerPause = false;
+  // playCountdownToFight();
+  // setAppStateUI(appStates.MATCH);
+  // arenaApp.timerPause = false;
 }
 
 function pausePressed(){
-  if(debugMode) console.log("Pause pressed");
+  debugLog("Pause pressed");
   
-  setAppStateUI(appStates.MATCHPAUSED);
-  arenaApp.timerPause = true;
+  // setAppStateUI(appStates.MATCHPAUSED);
+  // arenaApp.timerPause = true;
 }
 
 function resetPressed(){
-  if(debugMode) console.log("Reset pressed");
+  debugLog("Reset pressed");
 
-  arenaApp.timerPause = true;
-  secondsLeft = startSeconds;
-  updateTimer();
-  setAppStateUI(appStates.LOADIN);
+  // arenaApp.timerPause = true;
+  // secondsLeft = startSeconds;
+  // updateTimer();
+  // setAppStateUI(appStates.LOADIN);
 }
 
 function redReadyPressed(){
-  if(debugMode) console.log("Red Ready!");
-  
-  arenaApp.redReady = true;
-  
+  debugLog("Red Ready Pressed");
+    
+  switch (arenaApp.appState){
+    case appStates.PREMATCH:
+      arenaApp.redReady = true;
+      playerReady(appPlayers.RED);
+      break;
+    case appStates.MATCH:
+      playerTapout(appPlayers.RED);
+      break;
+  }
 }
 
 function blueReadyPressed(){
-  if(debugMode) console.log("Blue Ready!");
+  debugLog("Blue Ready Pressed");
   
-  arenaApp.blueReady = true;  
+  switch (arenaApp.appState){
+    case appStates.PREMATCH:
+      arenaApp.blueReady = true;
+      playerReady(appPlayers.BLUE);
+      break;
+    case appStates.MATCH:
+      playerTapout(appPlayers.BLUE);
+      break;
+  }  
 }
 
 
@@ -521,29 +547,18 @@ Blue_Ready_Button.watch((err, value) => {
   if (err) {
     throw err;
   }
-  
-  if (debugMode) {console.log("Blue Ready Button Pressed")};
-  
-  Remote_Blue_Ready_LED.writeSync(0);
-  
-  playBlueReady();
+  blueReadyPressed();
 })
 
 Red_Ready_Button.watch((err, value) => {
   if (err) {
     throw err;
   }
-  
-  if (debugMode) {console.log("Red Ready Button Pressed")};
-  Remote_Red_Ready_LED.writeSync(0);
-  
-  playRedReady();
+  redReadyPressed();
 })
 
 
 //#endregion
-
-
 
 
 // --- example of how to add a listner for when the timer ticks
@@ -552,13 +567,13 @@ timer.on('tick', function(e){
 });
 
 
-
-
-
-//#region GPIO initial states
+//#region GPIO state functions
 
 function LoadIn(){
   
+  // Set the app state
+  arenaApp.appState = appStates.LOADIN;
+
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
   //SAFTEY_LIGHT_LOGIC
@@ -570,6 +585,10 @@ function LoadIn(){
 }
 
 function PreMatch(){
+  
+  // Set the app state
+  arenaApp.appState = appStates.PREMATCH;
+  
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
   //SAFTEY_LIGHT_LOGIC
@@ -579,9 +598,10 @@ function PreMatch(){
   WaitForReady_LED.writeSync(0); //ON
   
   // Create array of player ready leds
-  arenaApp.playerReadyLeds = [];
+  debugLog("All player ready leds blinking");
+  playerLeds = [MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Remote_Blue_Ready_LED,Remote_Red_Ready_LED];
+  startBlink(playerLeds);
 
-  //Blink_Ready(1);
 }
 
 function Match(){
@@ -589,6 +609,96 @@ function Match(){
 
   InMatch_LED.writeSync(0); //ON
   Pause_Button_LED.writeSync(0); // ON to indicate it is available to use
+
+}
+
+// Sets the GPIO state for when a player is ready
+function playerReady(player){
+  debugLog("playerReady method called");
+
+  // Play sound
+  switch (player){
+    case appPlayers.BLUE:
+      debugLog("Playing blue ready sound");
+      playBlueReady();
+      break;
+    case appPlayers.RED:
+      debugLog("Playing red ready sound");
+      playRedReady();
+      break;
+  }
+
+  // Set interval to wait for the player ready sound to end
+  var soundInterval = setInterval(function(){
+    if(arenaApp.playerSoundInProgress == false)
+      clearInterval(soundInterval);
+  }, 500);
+
+  // Stop all blinking
+  stopBlink();  
+
+  // Determine if other player needs to continue to blink or go solid on
+  if(arenaApp.blueReady === false || arenaApp.redReady === false){
+    
+    playerLeds = [];
+    if(arenaApp.blueReady === false){
+      debugLog("Blue player blinking");
+      playerLeds.push(MCP_Blue_Ready_LED);
+      playerLeds.push(Remote_Blue_Ready_LED);
+    } else {
+      // Not blinking, turn on leds
+      debugLog("Blue player solid on");
+      MCP_Blue_Ready_LED.writeSync(0); //ON
+      Remote_Blue_Ready_LED.writeSync(0); //ON
+    }
+    if(arenaApp.redReady === false){
+      debugLog("Red player blinking");
+      playerLeds.push(MCP_Red_Ready_LED);
+      playerLeds.push(Remote_Red_Ready_LED);
+    } else {
+      // Not blinking, turn on leds
+      debugLog("Red player solid on");
+      MCP_Red_Ready_LED.writeSync(0); //ON
+      Remote_Red_Ready_LED.writeSync(0); //ON
+    }
+
+    // start blinking
+    setTimeout(() => {
+      debugLog("Player leds blinking");
+      startBlink(playerLeds);
+    }, 1000); // Wait one second to start blinking
+
+  } else { // Both players ready, set GPIOs for fight mode
+    debugLog("Both players ready")
+    
+    setUiText("ROBOTS READY");
+
+    // Make sure both player ready leds are on
+    debugLog("All player ready leds on solid.")
+    MCP_Red_Ready_LED.writeSync(0); //ON
+    Remote_Red_Ready_LED.writeSync(0); //ON
+    MCP_Blue_Ready_LED.writeSync(0); //ON
+    Remote_Blue_Ready_LED.writeSync(0); //ON
+
+    // Wait for ready blink
+    
+    var wfrLed = [WaitForReady_LED];
+    setTimeout(() => {
+      debugLog("Wait for ready blinking");
+      startBlink(wfrLed);
+    }, 1000); // Wait one second to start blinking
+
+    // Start button on
+    debugLog("Start button led on");
+    Start_Button_LED.writeSync(0); //ON
+  }
+}
+
+function playerTapout(player){
+
+  // Pause the timer
+  app.pauseTimer();
+
 
 }
 
@@ -643,16 +753,14 @@ function Blink_Ready(leds){
 
 function startBlink(LEDS) {
   arenaApp.blink = true;
-
-  arenaApp.blinkInterval = setInterval(function(){
-    if(debugMode) console.log("Starting Blink");
-
+  debugLog("Starting Blink");
+  blinkInterval = setInterval(function(){
     if (arenaApp.blink){
       blinkLED(LEDS);
     } else {
-      endBlink(LEDS);
+      endBlink(blinkInterval, LEDS);
     }
-  }, 250); 
+  }, 500); 
 }
 
 function stopBlink(){
@@ -667,9 +775,11 @@ function blinkLED(LEDS) {
 }
 
 // Stop blinking
-function endBlink(LEDS) { 
+function endBlink(blinkingInterval, LEDS) { 
+  debugLog("Stopping blinking");
+
   // Stop blink interval
-  clearInterval(arenaApp.blinkInterval); 
+  clearInterval(blinkingInterval); 
 
   // Turn off specified leds
   for (i=0;i<LEDS.length;i++){
@@ -678,10 +788,17 @@ function endBlink(LEDS) {
 }
 
 
+//#endregion
 
 
+//#region Misc methods
+
+function debugLog(msg){
+  if(debugMode) console.log(msg);
+}
 
 //#endregion
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- LED Initilization
