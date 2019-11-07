@@ -73,7 +73,12 @@ app.on('activate', function () {
 //#region UI setup    ///////////////////////////////////////////////////////////////////////////////////
 
 //--- Set constants and variables.
-var player = require('play-sound')(opts = {});
+var omx = require('node-omxplayer');
+var player = omx('./assets/metronome.mp3');
+player.on("close", function(){
+  debugLog("sound stopped");
+  arenaApp.soundInProgress = false;
+});
 var eventEmitter = require('events').EventEmitter;
 var exec = require('child_process').exec;
 var timer = new eventEmitter.EventEmitter();
@@ -314,19 +319,18 @@ app.getAppState = function(){
 //#region Methods for playing sounds    ///////////////////////////////////////////////////////////////////////////////////
 
 function playBlueReady(){
-  arenaApp.playerSoundInProgress = true;
-  player.play('./assets/blue.mp3');
-  arenaApp.playerSoundInProgress = false;
+  arenaApp.soundInProgress = true;
+  player.newSource('./assets/blue.mp3'); 
 }
 
 function playRedReady(){
-  arenaApp.playerSoundInProgress = true;
-  player.play('./assets/red.mp3');  
-  arenaApp.playerSoundInProgress = false;
+  arenaApp.soundInProgress = true;
+  player.newSource('./assets/red.mp3');  
 }
 
 function playTapout(){
-  player.play('./assets/tapout-game.mp3');  
+  arenaApp.soundInProgress = true;
+  player.newSource('./assets/tapout-game.mp3');
 }
 
 //#endregion
@@ -630,9 +634,16 @@ function playerReady(player){
 
   // Set interval to wait for the player ready sound to end
   var soundInterval = setInterval(function(){
-    if(arenaApp.playerSoundInProgress == false)
-      clearInterval(soundInterval);
+    if(arenaApp.soundInProgress == false)
+      setPlayerGPIOs(soundInterval);
   }, 500);
+
+}
+
+function setPlayerGPIOs(soundInterval){
+  
+  // Clear interval that called this method.
+  clearInterval(soundInterval);
 
   // Stop all blinking
   stopBlink();  
@@ -671,7 +682,7 @@ function playerReady(player){
   } else { // Both players ready, set GPIOs for fight mode
     debugLog("Both players ready")
     
-    setUiText("ROBOTS READY");
+    app.setUiText("ROBOTS READY");
 
     // Make sure both player ready leds are on
     debugLog("All player ready leds on solid.")
