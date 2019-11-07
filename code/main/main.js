@@ -14,9 +14,9 @@ let mainWindow
 function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    kiosk: true,
-    // width: 1500,
-    // height: 900,
+    //kiosk: true,
+    width: 1500,
+    height: 900,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true
@@ -125,8 +125,9 @@ const appPlayers = {
 var arenaApp = {
   startTimerAfterSound: false,
   appState: appStates.LOADIN,
-  blink: false,
+  blinking: false,
   blinkInterval: null,
+  blinkingLeds: [],
   redReady: false,
   blueReady: false
 };
@@ -640,8 +641,8 @@ function PreMatch(){
   
   // Create array of player ready leds
   debugLog("All player ready leds blinking");
-  playerLeds = [MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Remote_Blue_Ready_LED,Remote_Red_Ready_LED];
-  startBlink(playerLeds);
+  arenaApp.blinkingLeds = [MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Remote_Blue_Ready_LED,Remote_Red_Ready_LED];
+  startBlink(arenaApp.blinkingLeds);
 
 }
 
@@ -670,31 +671,32 @@ function Match(){
 function playerReady(player){
   debugLog("playerReady method called");
 
-  // Play sound
+  var playBlueReadyAudio = false;
+  var playRedReadyAudio = false;
+  
+  // Determine which player is ready
   switch (player){
     case appPlayers.BLUE:
       if(arenaApp.blueReady === false){
-        debugLog("Playing blue ready sound");
-        playBlueReady();
         arenaApp.blueReady = true;
+        playBlueReadyAudio = true;
       }      
       break;
     case appPlayers.RED:
       if(arenaApp.redReady === false){
-        debugLog("Playing red ready sound");
-        playRedReady();
         arenaApp.redReady = true;
+        playRedReadyAudio = true;
       }      
       break;
   }
-
-  // // Set interval to wait for the player ready sound to end
-  // var soundInterval = setInterval(function(){
-  //   if(arenaApp.soundInProgress == false)
-  //     setPlayerGPIOs(soundInterval);
-  // }, 200);
-
+  
+  // Set GPIO states
   setPlayerGPIOs();
+
+  // Play appropriate sound
+  if(playBlueReadyAudio) playBlueReady();
+  if(playRedReadyAudio) playRedReady();
+ 
 
 }
 
@@ -709,11 +711,11 @@ function setPlayerGPIOs(soundInterval){
   // Determine if other player needs to continue to blink or go solid on
   if(arenaApp.blueReady === false || arenaApp.redReady === false){
     
-    playerLeds = [];
+    arenaApp.blinkingLeds = [];
     if(arenaApp.blueReady === false){
       debugLog("Blue player blinking");
-      playerLeds.push(MCP_Blue_Ready_LED);
-      playerLeds.push(Remote_Blue_Ready_LED);
+      arenaApp.blinkingLeds.push(MCP_Blue_Ready_LED);
+      arenaApp.blinkingLeds.push(Remote_Blue_Ready_LED);
     } else {
       // Not blinking, turn on leds
       debugLog("Blue player solid on");
@@ -722,8 +724,8 @@ function setPlayerGPIOs(soundInterval){
     }
     if(arenaApp.redReady === false){
       debugLog("Red player blinking");
-      playerLeds.push(MCP_Red_Ready_LED);
-      playerLeds.push(Remote_Red_Ready_LED);
+      arenaApp.blinkingLeds.push(MCP_Red_Ready_LED);
+      arenaApp.blinkingLeds.push(Remote_Red_Ready_LED);
     } else {
       // Not blinking, turn on leds
       debugLog("Red player solid on");
@@ -732,10 +734,8 @@ function setPlayerGPIOs(soundInterval){
     }
 
     // start blinking
-    setTimeout(() => {
-      debugLog("Player leds blinking");
-      startBlink(playerLeds);
-    }, 500); // Wait half second to start blinking
+    startBlink(arenaApp.blinkingLeds);
+    
 
   } else { // Both players ready, set GPIOs for fight mode
     debugLog("Both players ready")
@@ -749,13 +749,9 @@ function setPlayerGPIOs(soundInterval){
     MCP_Blue_Ready_LED.writeSync(0); //ON
     Remote_Blue_Ready_LED.writeSync(0); //ON
 
-    // Wait for ready blink
-    
-    var wfrLed = [WaitForReady_LED];
-    setTimeout(() => {
-      debugLog("Wait for ready blinking");
-      startBlink(wfrLed);
-    }, 500); // Wait half second to start blinking
+    // Wait for ready blink   
+    arenaApp.blinkingLeds = [WaitForReady_LED];
+    startBlink(arenaApp.blinkingLeds);
 
     // Start button on
     debugLog("Start button led on");
@@ -834,19 +830,16 @@ function Blink_Ready(leds){
 //#region Blink functions
 
 function startBlink(LEDS) {
-  arenaApp.blink = true;
+  
   debugLog("Starting Blink");
-  blinkInterval = setInterval(function(){
-    if (arenaApp.blink){
-      blinkLED(LEDS);
-    } else {
-      endBlink(blinkInterval, LEDS);
-    }
+
+  arenaApp.blinkInterval = setInterval(function(){
+    blinkLED(LEDS);   
   }, 500); 
 }
 
 function stopBlink(){
-  arenaApp.blink = false;
+  endBlink(arenaApp.blinkingLeds)
 }
 
 // Toggle led state
@@ -857,11 +850,11 @@ function blinkLED(LEDS) {
 }
 
 // Stop blinking
-function endBlink(blinkingInterval, LEDS) { 
+function endBlink(LEDS) { 
   debugLog("Stopping blinking");
 
   // Stop blink interval
-  clearInterval(blinkingInterval); 
+  clearInterval(arenaApp.blinkInterval); 
 
   // Turn off specified leds
   for (i=0;i<LEDS.length;i++){
@@ -893,4 +886,5 @@ LED_ALL_OFF(); // turn off ALL LEDs to start
 //StartBlink([MCP_Blue_Ready_LED,MCP_Red_Ready_LED,WaitForReady_LED]);
 // setTimeout used to SIMULATING A BUTTON CLICK
 //setTimeout(function(){stopBlink()}, 5000); //stop blinking after 5 seconds
+
 
