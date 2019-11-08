@@ -886,6 +886,8 @@ function endBlink(LEDS) {
   // Stop blink interval
   clearInterval(arenaApp.blinkInterval); 
 
+  // Turn off specified leds
+  for (i=0;i<LEDS.length;i++){
     LEDS[i].writeSync(1);    
   }  
 }
