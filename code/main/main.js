@@ -95,7 +95,7 @@ var timer = new eventEmitter.EventEmitter();
 
 //--- Set initial constants and variables
 var startSeconds = 120; // 3 minutes - Set Timer Length
-if (debugMode) startSeconds = 16; // override time for debugging
+if (debugMode) startSeconds = 21; // override time for debugging
 var secondsLeft = startSeconds;
 
 const appStates = {
@@ -251,14 +251,10 @@ function setAppStateUI(state){ // expects an appState
       case appStates.MATCH:
         mainWindow.webContents.executeJavaScript(`disableTimerControls()`);
         if(secondsLeft <= 15)
-          mainWindow.webContents.executeJavaScript(`setTimerStartPulse()`);  
-          // Start blinking the safety lights white
-          arenaApp.blinkingLeds = leds_White;
-          startBlink(arenaApp.blinkingLeds);     
+          mainWindow.webContents.executeJavaScript(`setTimerStartPulse()`);      
         break;
       case appStates.MATCHPAUSED:
           mainWindow.webContents.executeJavaScript(`setTimerStopPulse()`);
-          stopBlink();
           break;
     }
   }    
@@ -408,7 +404,7 @@ function startPressed(){
     case appStates.PREMATCH:
     case appStates.MATCHPAUSED:
 
-    // If players ready, switch to match
+      // If players ready, switch to match
       if(arenaApp.blueReady && arenaApp.redReady){
         arenaApp.startTimerAfterSound = true;
         playCountdownToFight();
@@ -428,6 +424,7 @@ function pausePressed(){
     stopTimer();
 
     // GPIO Related Code
+    stopBlink();
     LED_ALL_OFF();
     Start_Button_LED.writeSync(0); // ON
     Reset_Button_LED.writeSync(0); // ON
@@ -648,9 +645,6 @@ function PreMatch(){
   
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
-  
-
-
   Reset_Button_LED.writeSync(0); //ON
   Standby_LED.writeSync(0); //ON
   WaitForReady_LED.writeSync(0); //ON
@@ -674,7 +668,11 @@ function Match(){
 
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
-  //SAFETY_LIGHT_LOGIC
+  if(secondsLeft <= 15)
+    // Start blinking the safety lights white
+    arenaApp.blinkingLeds = leds_White;
+    startBlink(arenaApp.blinkingLeds);     
+  break;
 
   
 
@@ -834,7 +832,8 @@ function blinkLED(LEDS) {
 // Stop blinking
 function endBlink(LEDS) { 
   debugLog("Stopping blinking");
-
+  debugLog(arenaApp.blinkInterval);
+  
   // Stop blink interval
   clearInterval(arenaApp.blinkInterval); 
 
