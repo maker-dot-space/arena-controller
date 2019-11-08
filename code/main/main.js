@@ -180,6 +180,7 @@ function timerTick(){
       stopTimer();
       setAppStateUI(appStates.MATCHFINISHED);
       arenaApp.appState = appStates.MATCHFINISHED;
+      stopBlink();
       LED_ALL_OFF();
       Standby_LED.writeSync(0); //ON
       arenaApp.blinkingLeds = [eStop_LED];
@@ -197,8 +198,14 @@ function updateTimer(){
   // Update the UI
   if(mainWindow !== null) {
     mainWindow.webContents.executeJavaScript(`updateTimer('` + getTimerText() + `')`);
-    if(secondsLeft === 15)
+    if(secondsLeft === 15){
+      // Start pulsing the timer in the UI
       mainWindow.webContents.executeJavaScript(`setTimerColorEnding()`);
+      
+      // Start blinking the safety lights white
+      arenaApp.blinkingLeds = leds_White;
+      startBlink(arenaApp.blinkingLeds);
+    }
 
     if(secondsLeft === 1)
       mainWindow.webContents.executeJavaScript(`setTimerStopPulse()`);
@@ -244,10 +251,14 @@ function setAppStateUI(state){ // expects an appState
       case appStates.MATCH:
         mainWindow.webContents.executeJavaScript(`disableTimerControls()`);
         if(secondsLeft <= 15)
-          mainWindow.webContents.executeJavaScript(`setTimerStartPulse()`);       
+          mainWindow.webContents.executeJavaScript(`setTimerStartPulse()`);  
+          // Start blinking the safety lights white
+          arenaApp.blinkingLeds = leds_White;
+          startBlink(arenaApp.blinkingLeds);     
         break;
       case appStates.MATCHPAUSED:
           mainWindow.webContents.executeJavaScript(`setTimerStopPulse()`);
+          stopBlink();
           break;
     }
   }    
@@ -422,6 +433,7 @@ function pausePressed(){
     Reset_Button_LED.writeSync(0); // ON
     InMatch_LED.writeSync(0); // ON
     Standby_LED.writeSync(0); // ON
+
   }  
 }
 
@@ -471,7 +483,6 @@ function redReadyPressed(){
 
 
 //#endregion
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- GPIO Setup
@@ -575,42 +586,21 @@ Start_Button.watch((err, value) => {
   if (err) {
     throw err;
   }
-
   startPressed();
-
-  // if (debugMode) {console.log("Start Pressed")};
-
-  // Start_Button_LED.writeSync(Start_Button_LED.readSync() ^ 1);
-  // InMatch_LED.writeSync(InMatch_LED.readSync() ^ 1);
-  // app.startTimer();
 });
 
 Pause_Button.watch((err, value) => {    
   if (err) {
     throw err;
   }
-
   pausePressed();
-  // if (debugMode) {console.log("Pause Pressed")};
-
-  // Pause_Button_LED.writeSync(Pause_Button_LED.readSync() ^ 1);
-  // Standby_LED.writeSync(Standby_LED.readSync() ^ 1);    
-  // app.pauseTimer();
-  
-  
 });
 
 Reset_Button.watch((err, value) => {
   if (err) {
     throw err;
   }
-  
   resetPressed();
-
-  // if (debugMode) {console.log("Reset Pressed")};
-  // Reset_Button_LED.writeSync(Reset_Button_LED.readSync() ^ 1);
-  // WaitForReady_LED.writeSync(WaitForReady_LED.readSync() ^ 1);
-  // app.resetTimer();
 });
 
 Blue_Ready_Button.watch((err, value) => {
@@ -630,13 +620,9 @@ Red_Ready_Button.watch((err, value) => {
 
 //#endregion
 
-
-// --- example of how to add a listner for when the timer ticks
-timer.on('tick', function(e){  
-  if (debugMode) {console.log(e + " seconds left")};
-});
-
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// --- GPIO state functions
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //#region GPIO state functions
 
 function LoadIn(){
@@ -662,7 +648,7 @@ function PreMatch(){
   
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
-  //SAFETY_LIGHT_LOGIC
+  
 
 
   Reset_Button_LED.writeSync(0); //ON
@@ -673,6 +659,9 @@ function PreMatch(){
   debugLog("All player ready leds blinking");
   arenaApp.blinkingLeds = [MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Remote_Blue_Ready_LED,Remote_Red_Ready_LED];
   startBlink(arenaApp.blinkingLeds);
+
+  // Blink the saftey light alternately between blue and red
+  startBlueRedAltBlink();
 
 }
 
@@ -737,6 +726,7 @@ function setPlayerGPIOs(soundInterval){
 
   // Stop all blinking
   stopBlink();  
+  stopBlueRedAltBlink();
 
   // Determine if other player needs to continue to blink or go solid on
   if(arenaApp.blueReady === false || arenaApp.redReady === false){
@@ -746,6 +736,7 @@ function setPlayerGPIOs(soundInterval){
       debugLog("Blue player blinking");
       arenaApp.blinkingLeds.push(MCP_Blue_Ready_LED);
       arenaApp.blinkingLeds.push(Remote_Blue_Ready_LED);
+      arenaApp.blinkingLeds.push(rgb_Blue_LED);
     } else {
       // Not blinking, turn on leds
       debugLog("Blue player solid on");
@@ -756,6 +747,7 @@ function setPlayerGPIOs(soundInterval){
       debugLog("Red player blinking");
       arenaApp.blinkingLeds.push(MCP_Red_Ready_LED);
       arenaApp.blinkingLeds.push(Remote_Red_Ready_LED);
+      arenaApp.blinkingLeds.push(rgb_Red_LED);
     } else {
       // Not blinking, turn on leds
       debugLog("Red player solid on");
@@ -812,48 +804,6 @@ function playerTapout(player){
 
 //#endregion
 
-
-// function blinkLED(led) { //function to start blinking
-//   if (led.readSync() === 0) { //check the pin state, if the state is 0 (or off)
-//     led.writeSync(1); //set pin state to 1 (turn LED on)
-
-//   } else {
-//     led.writeSync(0); //set pin state to 0 (turn LED off)
-//   }
-// }
-
-// function endBlink(led) { //function to stop blinking
-//   clearInterval(blinkInterval); // Stop blink intervals
-//   led.writeSync(1); // Turn LED off
-//   //InMatch_LED.unexport(); // Unexport GPIO to free resources
-// }
-////////////////////////////////////////////
-// MCP_Blue_Ready_LED.writeSync(0);
-// MCP_Red_Ready_LED.writeSync(0);
-// setTimeout(function(){MCP_Red_Ready_LED.writeSync(1)}, 5000);
-// setTimeout(function(){MCP_Blue_Ready_LED.writeSync(1)}, 5000);
-
-function Blink_Ready(leds){
-  //leds: OFF,ALL,RED,BLUE 0,1,2,3
-  if (leds===1){
-    //turn all ON
-    MCP_Blue_Ready_LED.writeSync(0); //ON
-    MCP_Red_Ready_LED.writeSync(0); //ON
-  } else if (leds===2) {
-    //turn off Blue, let Red cont
-    MCP_Blue_Ready_LED.writeSync(1); //OFF
-    MCP_Red_Ready_LED.writeSync(0); //ON
-  } else if (leds===3) {
-    //turn off Red, let Blue cont
-    MCP_Blue_Ready_LED.writeSync(0); //ON
-    MCP_Red_Ready_LED.writeSync(1); //OFF
-  } else {
-    //turn all OFF
-    MCP_Blue_Ready_LED.writeSync(1); //OFF
-    MCP_Red_Ready_LED.writeSync(1); //OFF
-  }
-}
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- Blink Functions
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -892,13 +842,44 @@ function endBlink(LEDS) {
   }  
 }
 
+
+function startBlueRedAltBlink(){
+  // Start by turning blue on and red off
+  rgb_Blue_LED.writeSync(0); //ON
+  rgb_Red_LED.writeSync(1); //OFF
+  arenaApp.altBlinkInterval = (function(){
+    // Now swap
+    rgb_Blue_LED.writeSync(rgb_Blue_LED.readSync() ^ 1);
+    rgb_Red_LED.writeSync(rgb_Red_LED.readSync() ^ 1);
+  }, 500);
+}
+
+function stopBlueRedAltBlink(){
+  // Clear the interval
+  clearInterval(arenaApp.altBlinkInterval);
+
+  // Make sure that both leds are off
+  rgb_Blue_LED.writeSync(1); //OFF
+  rgb_Red_LED.writeSync(1); //OFF
+}
+
 //#endregion
 
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// --- Misc Functions
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //#region Misc methods
 
 function debugLog(msg){
   if(debugMode) console.log(msg);
+}
+
+function msleep(n) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n);
+}
+
+function sleep(n) {
+  msleep(n*1000);
 }
 
 //#endregion
@@ -908,12 +889,13 @@ function debugLog(msg){
 // --- LED Initilization
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 LED_ALL_OFF(); // turn off ALL LEDs to start
-LED_Test_Sequence(); // turn each LED on/off in sequence then flash ALL leds for 2 seconds
+//LED_Test_Sequence(); // turn each LED on/off in sequence then flash ALL leds for 2 seconds
 
 // TURN OFF BEFORE PRODUCTION! 
 
 //StartBlink([MCP_Blue_Ready_LED,MCP_Red_Ready_LED,WaitForReady_LED]);
 // setTimeout used to SIMULATING A BUTTON CLICK
 //setTimeout(function(){stopBlink()}, 5000); //stop blinking after 5 seconds
+
 
 
