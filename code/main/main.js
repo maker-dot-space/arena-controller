@@ -670,11 +670,13 @@ function Match(){
   // Set the app state
   arenaApp.appState = appStates.MATCH;
 
+  stopBlink();
+
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
   //SAFETY_LIGHT_LOGIC
 
-  stopBlink();
+  
 
   MCP_Blue_Ready_LED.writeSync(0); //ON
   MCP_Red_Ready_LED.writeSync(0); //ON
