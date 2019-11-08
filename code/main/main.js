@@ -4,65 +4,65 @@ const debugMode = true;
 //#region Electron initilization    ///////////////////////////////////////////////////////////////////////////////////
 
 // Modules to control application life and create native browser window
-const {app, BrowserWindow} = require('electron')
-const path = require('path')
+const {app, BrowserWindow} = require("electron");
+const path = require("path");
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow
+let mainWindow;
 
 function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    kiosk: true,
-    // width: 1500,
-    // height: 900,
+    //kiosk: true,
+    width: 1500,
+    height: 900,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       nodeIntegration: true
     }
-  })
+  });
 
   // and load the index.html of the app.
-  mainWindow.loadFile('index.html')
+  mainWindow.loadFile("index.html");
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
 
   // Emitted when the window is closed.
-  mainWindow.on('closed', function () {
+  mainWindow.on("closed", function () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    mainWindow = null
-  })
+    mainWindow = null;
+  });
 
-  console.log('Waiting on dom');
+  console.log("Waiting on dom");
 
-  mainWindow.webContents.once('dom-ready', ()=> {
-    if (debugMode) {console.log("Dom Ready")};
+  mainWindow.webContents.once("dom-ready", function() {
+    if (debugMode) console.log("Dom Ready");
     initializeArena();   
-  })
+  });
   
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow)
+app.on("ready", createWindow);
 
 // Quit when all windows are closed.
-app.on('window-all-closed', function () {
+app.on("window-all-closed", function () {
   // On macOS it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') app.quit()
-})
+  if (process.platform !== "darwin") app.quit();
+});
 
 app.on('activate', function () {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) createWindow()
-})
+  if (mainWindow === null) createWindow();
+});
 
 //#endregion
 
@@ -243,16 +243,18 @@ function setAppStateUI(state){ // expects an appState
 
         arenaApp.redReady = false;
         arenaApp.blueReady = false;
-
         break;
+
       case appStates.PREMATCH:
         mainWindow.webContents.executeJavaScript(`enableTimerControls()`);
         break;
+
       case appStates.MATCH:
         mainWindow.webContents.executeJavaScript(`disableTimerControls()`);
         if(secondsLeft <= 15)
           mainWindow.webContents.executeJavaScript(`setTimerStartPulse()`);      
         break;
+
       case appStates.MATCHPAUSED:
           mainWindow.webContents.executeJavaScript(`setTimerStopPulse()`);
           break;
@@ -327,7 +329,7 @@ app.setUiText = function(text){
 
 app.getAppState = function(){
   return arenaApp.appState;
-};
+}
 
 
 
@@ -400,6 +402,7 @@ function eStopPressed(){
 
 function startPressed(){
   debugLog("Start pressed");
+
   switch (arenaApp.appState){
     case appStates.PREMATCH:
     case appStates.MATCHPAUSED:
@@ -408,7 +411,9 @@ function startPressed(){
       if(arenaApp.blueReady && arenaApp.redReady){
         arenaApp.startTimerAfterSound = true;
         playCountdownToFight();
+        debugLog("Updating UI Match State");
         setAppStateUI(appStates.MATCH);
+        debugLog("Calling Match() gpio method");
         Match(); // GPIO related code during PreMatch State  
       }
       break;
@@ -518,7 +523,7 @@ const leds = [Remote_Blue_Ready_LED,MCP_Blue_Ready_LED,MCP_Red_Ready_LED,
 
 const leds_White = [rgb_Green_LED,rgb_Red_LED,rgb_Blue_LED];
 const leds_Purple = [rgb_Red_LED,rgb_Blue_LED];
-const leds_Cyan = [rgb_Green_LED,rgb_Blue_LED,]
+const leds_Cyan = [rgb_Green_LED,rgb_Blue_LED];
 
 //#endregion
 
@@ -660,7 +665,8 @@ function PreMatch(){
 }
 
 function Match(){
-  
+  debugLog("In Match() method");
+
   // Set the app state
   arenaApp.appState = appStates.MATCH;
 
@@ -668,13 +674,12 @@ function Match(){
 
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
-  if(secondsLeft <= 15)
+  if(secondsLeft <= 15){
     // Start blinking the safety lights white
     arenaApp.blinkingLeds = leds_White;
-    startBlink(arenaApp.blinkingLeds);     
-  break;
-
-  
+    startBlink(arenaApp.blinkingLeds);
+  }        
+    
 
   MCP_Blue_Ready_LED.writeSync(0); //ON
   MCP_Red_Ready_LED.writeSync(0); //ON
@@ -719,10 +724,7 @@ function playerReady(player){
 
 }
 
-function setPlayerGPIOs(soundInterval){
-  
-  // // Clear interval that called this method.
-  // clearInterval(soundInterval);
+function setPlayerGPIOs(){
 
   // Stop all blinking
   stopBlink();  
@@ -743,6 +745,7 @@ function setPlayerGPIOs(soundInterval){
       MCP_Blue_Ready_LED.writeSync(0); //ON
       Remote_Blue_Ready_LED.writeSync(0); //ON
     }
+
     if(arenaApp.redReady === false){
       debugLog("Red player blinking");
       arenaApp.blinkingLeds.push(MCP_Red_Ready_LED);
