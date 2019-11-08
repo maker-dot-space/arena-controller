@@ -1,26 +1,32 @@
 var Gpio = require('onoff').Gpio; //include onoff to interact with the GPIO
 
-const Start_Button = new Gpio(17, 'in', 'falling', {debounceTimeout: 100});
-const Pause_Button = new Gpio(12, 'in', 'falling', {debounceTimeout: 100});
-const Reset_Button = new Gpio(27, 'in', 'falling', {debounceTimeout: 100});
-const eStop_Button = new Gpio(22, 'in', 'falling', {debounceTimeout: 100});
-const Blue_Ready_Button = new Gpio(23, 'in', 'rising', {debounceTimeout: 100});
+const Start_Button = new Gpio(17, 'in', 'rising', {debounceTimeout: 100});
+const Pause_Button = new Gpio(12, 'in', 'rising', {debounceTimeout: 100});
+const Reset_Button = new Gpio(27, 'in', 'rising', {debounceTimeout: 100});
+const eStop_Button = new Gpio(22, 'in', 'rising', {debounceTimeout: 100});
+const Blue_Ready_Button = new Gpio(23, 'in','rising', {debounceTimeout: 100});
 const Red_Ready_Button = new Gpio(24, 'in', 'rising', {debounceTimeout: 100});
 
-const MCP_Blue_Ready_LED = new Gpio(25, 'high'), //use declare variables for all the GPIO output pins
-  MCP_Red_Ready_LED = new Gpio(5, 'high'),
-  Remote_Blue_Ready_LED = new Gpio(4, 'high'),
-  Remote_Red_Ready_LED = new Gpio(10, 'high'),
-  Start_Button_LED = new Gpio(16, 'high'),
-  Pause_Button_LED = new Gpio(20, 'high'),
-  Reset_Button_LED = new Gpio(21, 'high'),
-  InMatch_LED = new Gpio(9, 'high'),
-  eStop_LED = new Gpio(6, 'high'),
-  Standby_LED = new Gpio(26, 'high'),
-  WaitForReady_LED = new Gpio(11, 'high');
+const MCP_Blue_Ready_LED = new Gpio(25, 'high');
+const MCP_Red_Ready_LED = new Gpio(5, 'high');
+const Remote_Blue_Ready_LED = new Gpio(4, 'high');
+const Remote_Red_Ready_LED = new Gpio(10, 'high');
+const Start_Button_LED = new Gpio(16, 'high');
+const Pause_Button_LED = new Gpio(20, 'high');
+const Reset_Button_LED = new Gpio(21, 'high');
+const InMatch_LED = new Gpio(9, 'high');
+const eStop_LED = new Gpio(6, 'high');
+const Standby_LED = new Gpio(26, 'high');
+const WaitForReady_LED = new Gpio(11, 'high');
+const rgb_Green_LED = new Gpio(18, 'high');
+const rgb_Red_LED = new Gpio(19, 'high');
+const rgb_Blue_LED = new Gpio(13, 'high');
 
 //Put all the LED variables in an array
-var leds = [MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Start_Button_LED,Pause_Button_LED,Reset_Button_LED,InMatch_LED,eStop_LED,Standby_LED,WaitForReady_LED,Remote_Blue_Ready_LED,Remote_Red_Ready_LED];
+var leds = [Remote_Blue_Ready_LED,MCP_Blue_Ready_LED,MCP_Red_Ready_LED,
+  Remote_Red_Ready_LED,Start_Button_LED,Pause_Button_LED,Reset_Button_LED,
+  InMatch_LED,eStop_LED,Standby_LED,WaitForReady_LED,
+  rgb_Green_LED,rgb_Red_LED,rgb_Blue_LED];
 
 function LED_ALL_OFF(){
   leds.forEach(function(currentValue) { //for each item in array

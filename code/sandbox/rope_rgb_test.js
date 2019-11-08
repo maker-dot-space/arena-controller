@@ -11,8 +11,8 @@ const InMatch_LED = new Gpio(9, 'high');
 const eStop_LED = new Gpio(6, 'high');
 const Standby_LED = new Gpio(26, 'high');
 const WaitForReady_LED = new Gpio(11, 'high');
-const rgb_Red_LED = new Gpio(18, 'high');
-const rgb_Green_LED = new Gpio(19, 'high');
+const rgb_Green_LED = new Gpio(18, 'high');
+const rgb_Red_LED = new Gpio(19, 'high');
 const rgb_Blue_LED = new Gpio(13, 'high');
 
 var arenaApp = {
@@ -24,7 +24,8 @@ var arenaApp = {
 
 //var blinkInterval = setInterval(blinkLED, 250); //run the blinkLED function every 250ms
 arenaApp.blink = true;
-StartBlink([rgb_Red_LED,rgb_Green_LED,rgb_Blue_LED,WaitForReady_LED]);
+//StartBlink([rgb_Red_LED,rgb_Green_LED,rgb_Blue_LED,WaitForReady_LED]);
+StartBlink([rgb_Green_LED,rgb_Red_LED,rgb_Blue_LED]);
 
 function blinkLED(LEDS) { //function to start blinking
   for (i=0;i<LEDS.length;i++){
@@ -51,4 +52,4 @@ function StartBlink(LEDS) {
 }
 
 // setTimeout used to SIMULATING A BUTTON CLICK
-setTimeout(function(){arenaApp.blink=false}, 20000); //stop blinking after 5 seconds
+setTimeout(function(){arenaApp.blink=false}, 5000); //stop blinking after 5 seconds

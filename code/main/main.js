@@ -498,9 +498,19 @@ const InMatch_LED = new Gpio(9, 'high');
 const eStop_LED = new Gpio(6, 'high');
 const Standby_LED = new Gpio(26, 'high');
 const WaitForReady_LED = new Gpio(11, 'high');
+const rgb_Green_LED = new Gpio(18, 'high');
+const rgb_Red_LED = new Gpio(19, 'high');
+const rgb_Blue_LED = new Gpio(13, 'high');
 
 //Put all the LED variables in an array
-var leds = [Remote_Blue_Ready_LED,MCP_Blue_Ready_LED,MCP_Red_Ready_LED,Remote_Red_Ready_LED,Start_Button_LED,Pause_Button_LED,Reset_Button_LED,InMatch_LED,eStop_LED,Standby_LED,WaitForReady_LED];
+const leds = [Remote_Blue_Ready_LED,MCP_Blue_Ready_LED,MCP_Red_Ready_LED,
+  Remote_Red_Ready_LED,Start_Button_LED,Pause_Button_LED,Reset_Button_LED,
+  InMatch_LED,eStop_LED,Standby_LED,WaitForReady_LED,
+  rgb_Green_LED,rgb_Red_LED,rgb_Blue_LED];
+
+const leds_White = [rgb_Green_LED,rgb_Red_LED,rgb_Blue_LED];
+const leds_Purple = [rgb_Red_LED,rgb_Blue_LED];
+const leds_Cyan = [rgb_Green_LED,rgb_Blue_LED,]
 
 //#endregion
 
@@ -636,8 +646,9 @@ function LoadIn(){
 
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
-  //SAFTEY_LIGHT_LOGIC
+  //SAFETY_LIGHT_LOGIC
   //Safety Light = ON
+  rgb_Green_LED.writeSync(0); 
   eStop_LED.writeSync(0); //ON
   Reset_Button_LED.writeSync(0); //ON
   Standby_LED.writeSync(0); //ON
@@ -651,8 +662,9 @@ function PreMatch(){
   
   LED_ALL_OFF(); // set LEDs to known state which is OFF
 
-  //SAFTEY_LIGHT_LOGIC
-  //Safety Light = OFF
+  //SAFETY_LIGHT_LOGIC
+
+
   Reset_Button_LED.writeSync(0); //ON
   Standby_LED.writeSync(0); //ON
   WaitForReady_LED.writeSync(0); //ON
@@ -874,12 +886,9 @@ function endBlink(LEDS) {
   // Stop blink interval
   clearInterval(arenaApp.blinkInterval); 
 
-  // Turn off specified leds
-  for (i=0;i<LEDS.length;i++){
     LEDS[i].writeSync(1);    
   }  
 }
-
 
 //#endregion
 
@@ -897,7 +906,7 @@ function debugLog(msg){
 // --- LED Initilization
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 LED_ALL_OFF(); // turn off ALL LEDs to start
-//LED_Test_Sequence(); // turn each LED on/off in sequence then flash ALL leds for 2 seconds
+LED_Test_Sequence(); // turn each LED on/off in sequence then flash ALL leds for 2 seconds
 
 // TURN OFF BEFORE PRODUCTION! 
 
