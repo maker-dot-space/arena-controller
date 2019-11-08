@@ -772,7 +772,7 @@ function setPlayerGPIOs(soundInterval){
     Remote_Blue_Ready_LED.writeSync(0); //ON
 
     // Wait for ready blink   
-    arenaApp.blinkingLeds = [WaitForReady_LED];
+    arenaApp.blinkingLeds = [WaitForReady_LED,rgb_Blue_LED,rgb_Green_LED,rgb_Red_LED];
     startBlink(arenaApp.blinkingLeds);
 
     // Start button on
