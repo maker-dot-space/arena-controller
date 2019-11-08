@@ -847,7 +847,7 @@ function startBlueRedAltBlink(){
   // Start by turning blue on and red off
   rgb_Blue_LED.writeSync(0); //ON
   rgb_Red_LED.writeSync(1); //OFF
-  arenaApp.altBlinkInterval = (function(){
+  arenaApp.altBlinkInterval = setInterval(function(){
     // Now swap
     rgb_Blue_LED.writeSync(rgb_Blue_LED.readSync() ^ 1);
     rgb_Red_LED.writeSync(rgb_Red_LED.readSync() ^ 1);
