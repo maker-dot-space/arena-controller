@@ -795,13 +795,18 @@ function playerTapout(player){
     playTapout();
 
     // Update the UI
-    setAppStateUI(appStates.LOADIN);
+    arenaApp.appState = appStates.MATCHFINISHED;
 
     // Update the ui text
     app.setUiText(appPlayers.properties[player].name + " TAPPED&nbsp; OUT!")
 
     // Set GPIO state
-    LoadIn();    
+    LED_ALL_OFF(); // set LEDs to known state which is OFF
+      
+    rgb_Green_LED.writeSync(0); 
+    eStop_LED.writeSync(0); //ON
+    Reset_Button_LED.writeSync(0); //ON
+    Standby_LED.writeSync(0); //ON  
   }
 }
 
